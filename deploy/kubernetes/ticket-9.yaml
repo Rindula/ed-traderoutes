@@ -16,6 +16,7 @@ data:
   RETENTION_CLEANUP_COMMAND: app:cleanup-market-data
   RETENTION_MARKET_DAYS: "30"
   RETENTION_RAW_EVENT_HOURS: "72"
+  CATALOG_PROVIDER_COMMAND: ""
 ---
 apiVersion: v1
 kind: Secret
@@ -267,8 +268,8 @@ spec:
       containers:
         - name: catalog-refresh
           image: ghcr.io/rindula/ed-traderoutes:latest
-          command: ["php", "bin/console"]
-          args: ["$(CATALOG_REFRESH_COMMAND)", "--no-interaction"]
+          command: ["sh", "-c"]
+          args: ["exec php bin/console \"$CATALOG_REFRESH_COMMAND\" --no-interaction"]
           envFrom:
             - configMapRef: { name: ed-traderoutes-config }
             - secretRef: { name: ed-traderoutes-secrets }
@@ -293,8 +294,8 @@ spec:
       containers:
         - name: catalog-refresh
           image: ghcr.io/rindula/ed-traderoutes:latest
-          command: ["php", "bin/console"]
-          args: ["$(CATALOG_REFRESH_COMMAND)", "--no-interaction"]
+          command: ["sh", "-c"]
+          args: ["exec php bin/console \"$CATALOG_REFRESH_COMMAND\" --no-interaction"]
           envFrom:
             - configMapRef: { name: ed-traderoutes-config }
             - secretRef: { name: ed-traderoutes-secrets }
@@ -323,8 +324,8 @@ spec:
       containers:
         - name: retention-cleanup
           image: ghcr.io/rindula/ed-traderoutes:latest
-          command: ["php", "bin/console"]
-          args: ["$(RETENTION_CLEANUP_COMMAND)", "--normalized-retention-days=$(RETENTION_MARKET_DAYS)", "--raw-retention-hours=$(RETENTION_RAW_EVENT_HOURS)", "--no-interaction"]
+          command: ["sh", "-c"]
+          args: ["exec php bin/console \"$RETENTION_CLEANUP_COMMAND\" --normalized-retention-days=\"$RETENTION_MARKET_DAYS\" --raw-retention-hours=\"$RETENTION_RAW_EVENT_HOURS\" --no-interaction"]
           envFrom:
             - configMapRef: { name: ed-traderoutes-config }
             - secretRef: { name: ed-traderoutes-secrets }
@@ -386,7 +387,7 @@ spec:
           image: postgres:16-alpine
           command: ["sh", "-c"]
           args:
-            - set -eu; export PGPASSWORD="$POSTGRES_PASSWORD"; pg_dump --host=postgres --username=app --dbname=app --format=custom --file="/backup/app-$(date -u +%Y%m%dT%H%M%SZ).dump"
+            - set -eu; export PGPASSWORD="$POSTGRES_PASSWORD"; destination="/backup/app-$(date -u +%Y%m%dT%H%M%SZ).dump"; temporary="$destination.part"; trap 'rm -f "$temporary"' EXIT; pg_dump --host=postgres --username=app --dbname=app --format=custom --file="$temporary"; test -s "$temporary"; mv "$temporary" "$destination"; test -s "$destination"; trap - EXIT
           env:
             - name: POSTGRES_PASSWORD
               valueFrom: { secretKeyRef: { name: ed-traderoutes-secrets, key: POSTGRES_PASSWORD } }
