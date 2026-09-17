@@ -172,7 +172,12 @@ final class MultiLegRouteCalculator
             if (!$request->returnsToStart() && $nextLegs !== []) {
                 $routes[] = new MultiLegRoute($nextLegs, $cargo, false);
             } elseif ($request->returnsToStart() && count($nextLegs) >= 2 && $atStart) {
-                $routes[] = new MultiLegRoute($nextLegs, $cargo, true);
+                $cargoAfterReturn = clone $cargo;
+                $this->settleCargoAtStation(
+                    $cargoAfterReturn,
+                    $latestObservations[$destinationStation->getId()] ?? [],
+                );
+                $routes[] = new MultiLegRoute($nextLegs, $cargoAfterReturn, true);
             }
 
             $canContinue = !$request->returnsToStart() || !$atStart;
