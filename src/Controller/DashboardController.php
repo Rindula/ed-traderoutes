@@ -22,15 +22,11 @@ final class DashboardController extends AbstractController
     #[Route('/dashboard', name: 'dashboard', methods: ['GET'])]
     public function page(): Response
     {
-        $data = $this->data();
-        $json = htmlspecialchars(json_encode($data, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-        $title = htmlspecialchars((string) ($data['user']['displayName'] ?? 'Dashboard'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-
-        return new Response('<!doctype html><html lang="en"><head><meta charset="utf-8"><title>ED Trade Routes - '.$title.'</title></head><body><main><h1>ED Trade Routes</h1><section id="dashboard" data-dashboard="'.$json.'"><h2>Current leg</h2><pre>'.htmlspecialchars(json_encode($data['activeRoute'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8').'</pre><h2>Route metrics</h2><pre>'.htmlspecialchars(json_encode($data['metrics'], JSON_PRETTY_PRINT), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8').'</pre><h2>Plugin and cargo</h2><pre>'.htmlspecialchars(json_encode(['plugin' => $data['plugin'], 'cargo' => $data['cargo']], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8').'</pre></section></main></body></html>');
+        return $this->render('dashboard.html.twig', ['dashboard' => $this->data()]);
     }
 
     #[Route('/api/dashboard', name: 'dashboard_json', methods: ['GET'])]
-    public function json(): JsonResponse
+    public function dashboardJson(): JsonResponse
     {
         return $this->json($this->data());
     }
