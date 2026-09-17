@@ -271,15 +271,17 @@ spec:
       backoffLimit: 4
       activeDeadlineSeconds: 7200
       ttlSecondsAfterFinished: 604800
-      restartPolicy: OnFailure
-      containers:
-        - name: catalog-refresh
-          image: ghcr.io/rindula/ed-traderoutes:latest@sha256:303dce670e8d5bcc0d61a530c5e583982ab709b5cc542dee274da83c61857b62
-          command: ["sh", "-c"]
-          args: ["exec php bin/console \"$CATALOG_REFRESH_COMMAND\" --no-interaction"]
-          envFrom:
-            - configMapRef: { name: ed-traderoutes-config }
-            - secretRef: { name: ed-traderoutes-secrets }
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: catalog-refresh
+              image: ghcr.io/rindula/ed-traderoutes:latest@sha256:303dce670e8d5bcc0d61a530c5e583982ab709b5cc542dee274da83c61857b62
+              command: ["sh", "-c"]
+              args: ["exec php bin/console \"$CATALOG_REFRESH_COMMAND\" --no-interaction"]
+              envFrom:
+                - configMapRef: { name: ed-traderoutes-config }
+                - secretRef: { name: ed-traderoutes-secrets }
 ---
 # Apply this suspended template once, then set spec.suspend=false for a manual run.
 apiVersion: batch/v1
@@ -327,15 +329,17 @@ spec:
       backoffLimit: 4
       activeDeadlineSeconds: 3600
       ttlSecondsAfterFinished: 604800
-      restartPolicy: OnFailure
-      containers:
-        - name: retention-cleanup
-          image: ghcr.io/rindula/ed-traderoutes:latest@sha256:303dce670e8d5bcc0d61a530c5e583982ab709b5cc542dee274da83c61857b62
-          command: ["sh", "-c"]
-          args: ["exec php bin/console \"$RETENTION_CLEANUP_COMMAND\" --normalized-retention-days=\"$RETENTION_MARKET_DAYS\" --raw-retention-hours=\"$RETENTION_RAW_EVENT_HOURS\" --no-interaction"]
-          envFrom:
-            - configMapRef: { name: ed-traderoutes-config }
-            - secretRef: { name: ed-traderoutes-secrets }
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: retention-cleanup
+              image: ghcr.io/rindula/ed-traderoutes:latest@sha256:303dce670e8d5bcc0d61a530c5e583982ab709b5cc542dee274da83c61857b62
+              command: ["sh", "-c"]
+              args: ["exec php bin/console \"$RETENTION_CLEANUP_COMMAND\" --normalized-retention-days=\"$RETENTION_MARKET_DAYS\" --raw-retention-hours=\"$RETENTION_RAW_EVENT_HOURS\" --no-interaction"]
+              envFrom:
+                - configMapRef: { name: ed-traderoutes-config }
+                - secretRef: { name: ed-traderoutes-secrets }
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
