@@ -1,29 +1,16 @@
 {
-    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-    "assignees": ["Rindula"],
-    "extends": [
-        "config:recommended"
-    ],
-    "lockFileMaintenance": {
-      "enabled": true,
-    },
-    "packageRules": [
-        {
-          "description": "Automerge tested non-major updates",
-          "matchUpdateTypes": ["minor", "patch"],
-          "matchCurrentVersion": "!/^0/",
-          "automerge": true,
-          "minimumReleaseAge": "3 days",
-          "automergeType": "pr",
-          "platformAutomerge": true
-        },
-        {
-          "description": "Require approval for major updates",
-          "matchUpdateTypes": ["major"],
-          "dependencyDashboardApproval": true
-        }
-    ],
-    "vulnerabilityAlerts": {
-        "automerge": true
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "kubernetes": {
+    "managerFilePatterns": ["/^deploy\\/kubernetes\\/.+\\.ya?ml$/"]
+  },
+  "packageRules": [
+    {
+      "description": "Keep the production image digest pinned while following latest",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["ghcr.io/rindula/ed-traderoutes"],
+      "pinDigests": true,
+      "digest": { "enabled": true }
     }
+  ]
 }
