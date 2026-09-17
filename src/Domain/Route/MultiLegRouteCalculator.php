@@ -6,6 +6,7 @@ use App\Domain\Cargo\CargoManifest;
 use App\Entity\MarketObservation;
 use App\Entity\Station;
 use App\Entity\System;
+use App\Repository\SystemRepository;
 
 /**
  * Plans bounded open or closed routes by walking executable trade edges.
@@ -16,6 +17,10 @@ use App\Entity\System;
  */
 final class MultiLegRouteCalculator
 {
+    public function __construct(private readonly ?SystemRepository $systemRepository = null)
+    {
+    }
+
     public function selectActiveRoute(MultiLegRoute $route, int $currentLeg = 0): ActiveRoutePreview
     {
         return new ActiveRoutePreview($route, $currentLeg);
@@ -29,8 +34,9 @@ final class MultiLegRouteCalculator
         MultiLegRouteRequest $request,
         iterable $stations,
         iterable $observations,
+        iterable $catalogSystems = [],
     ): ?MultiLegRoute {
-        return $this->calculateCandidates($request, $stations, $observations)[0] ?? null;
+        return $this->calculateCandidates($request, $stations, $observations, $catalogSystems)[0] ?? null;
     }
 
     /**
@@ -42,6 +48,7 @@ final class MultiLegRouteCalculator
         MultiLegRouteRequest $request,
         iterable $stations,
         iterable $observations,
+        iterable $catalogSystems = [],
     ): array {
         $stationList = [];
         foreach ($stations as $station) {
@@ -51,7 +58,7 @@ final class MultiLegRouteCalculator
         }
 
         $eligibleStations = $this->eligibleStations($request->legRequest(), $stationList);
-        $jumpSystems = $this->accessibleSystems($stationList);
+        $jumpSystems = $this->accessibleSystems($stationList, $catalogSystems);
         $latestObservations = $this->latestFreshObservations($request->legRequest(), $observations);
         $originStations = array_values(array_filter(
             $eligibleStations,
@@ -135,22 +142,18 @@ final class MultiLegRouteCalculator
                 $latestObservations[$currentStation->getId()] ?? [],
             );
 
-            $offer = $this->bestOffer(
+            [$offer, $cargoAfterPurchase] = $this->allocateCargo(
                 $latestObservations[$currentStation->getId()] ?? [],
                 $latestObservations[$destinationStation->getId()] ?? [],
-                $cargo->remainingCapacity(),
+                $cargo,
+                $currentStation->getName(),
             );
             if ($offer === null) {
+                $cargo = $cargoBefore;
                 continue;
             }
 
-            $cargo->buy(
-                $offer->commodityName(),
-                $offer->quantity(),
-                $offer->buyPrice(),
-                $currentStation->getName(),
-            );
-            $cargoAfterPurchase = clone $cargo;
+            $cargo = $cargoAfterPurchase;
 
             $tradeRoute = new TradeRoute(
                 $currentStation,
@@ -204,10 +207,16 @@ final class MultiLegRouteCalculator
         return $eligible;
     }
 
-    /** @param iterable<Station> $stations @return array<string, System> */
-    private function accessibleSystems(iterable $stations): array
+    /** @param iterable<Station> $stations @param iterable<System> $catalogSystems @return array<string, System> */
+    private function accessibleSystems(iterable $stations, iterable $catalogSystems): array
     {
         $systems = [];
+        foreach ([...($this->systemRepository?->findAccessible() ?? []), ...[...$catalogSystems]] as $system) {
+            if ($system instanceof System && $system->isAccessible()) {
+                $systems[$system->getId()] = $system;
+            }
+        }
+
         foreach ($stations as $station) {
             if (!$station instanceof Station || !$station->getSystem()->isAccessible()) {
                 continue;
@@ -263,11 +272,26 @@ final class MultiLegRouteCalculator
         return null;
     }
 
-    /** @param array<string, MarketObservation> $sourceMarkets @param array<string, MarketObservation> $destinationMarkets */
-    private function bestOffer(array $sourceMarkets, array $destinationMarkets, int $cargoCapacity): ?TradeOffer
+    /**
+     * Allocate the available hold to the most profitable executable offers.
+     *
+     * The first allocation is retained as the leg's representative offer for
+     * the existing TradeRoute API; the manifest contains every allocation.
+     *
+     * @param array<string, MarketObservation> $sourceMarkets
+     * @param array<string, MarketObservation> $destinationMarkets
+     * @return array{0: TradeOffer|null, 1: CargoManifest}
+     */
+    private function allocateCargo(
+        array $sourceMarkets,
+        array $destinationMarkets,
+        CargoManifest $cargoBeforePurchase,
+        string $purchaseStation,
+    ): array
     {
-        if ($cargoCapacity < 1) {
-            return null;
+        $cargo = clone $cargoBeforePurchase;
+        if ($cargo->remainingCapacity() < 1) {
+            return [null, $cargo];
         }
 
         $offers = [];
@@ -277,18 +301,35 @@ final class MultiLegRouteCalculator
                 continue;
             }
 
-            $offer = TradeOffer::fromObservations($sourceObservation, $destinationObservation, $cargoCapacity);
+            $offer = TradeOffer::fromObservations($sourceObservation, $destinationObservation, $cargo->remainingCapacity());
             if ($offer !== null) {
                 $offers[] = $offer;
             }
         }
 
         usort($offers, static fn (TradeOffer $left, TradeOffer $right): int =>
-            ($right->totalProfitCredits() <=> $left->totalProfitCredits())
+            ($right->profitPerUnit() <=> $left->profitPerUnit())
+            ?: ($right->totalProfitCredits() <=> $left->totalProfitCredits())
             ?: ($left->commodityName() <=> $right->commodityName())
         );
 
-        return $offers[0] ?? null;
+        $primaryOffer = null;
+        foreach ($offers as $offer) {
+            $quantity = min($offer->quantity(), $cargo->remainingCapacity());
+            if ($quantity < 1) {
+                break;
+            }
+
+            $cargo->buy(
+                $offer->commodityName(),
+                $quantity,
+                $offer->buyPrice(),
+                $purchaseStation,
+            );
+            $primaryOffer ??= $offer;
+        }
+
+        return [$primaryOffer, $cargo];
     }
 
     /**
