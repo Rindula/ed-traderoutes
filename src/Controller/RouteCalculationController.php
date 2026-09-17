@@ -11,11 +11,13 @@ use App\Domain\Route\MultiStopRouteCalculationRequest;
 use App\Domain\Route\MultiStopRouteCalculator;
 use App\Domain\Route\TradeRoute;
 use App\Entity\RouteSnapshot;
+use App\Entity\ActiveRoute;
 use App\Entity\User;
 use App\Repository\MarketObservationRepository;
 use App\Repository\RouteSnapshotRepository;
 use App\Repository\StationRepository;
 use App\Repository\SystemRepository;
+use App\Repository\ActiveRouteRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -30,6 +32,7 @@ final class RouteCalculationController extends AbstractController
         private readonly MarketObservationRepository $observations,
         private readonly RouteSnapshotRepository $snapshots,
         private readonly EntityManagerInterface $entityManager,
+        private readonly ActiveRouteRepository $activeRoutes,
         private readonly ?MultiStopRouteCalculator $multiLegCalculator = null,
     ) {}
 
@@ -107,6 +110,16 @@ final class RouteCalculationController extends AbstractController
             expectedProfitPerHour: (int) round($route->creditsPerHour()),
         );
         $this->snapshots->save($snapshot);
+        $activeLegs = $isMultiLeg
+            ? array_map(fn (MultiLegRouteLeg $leg): array => $this->serializeLeg($leg->tradeRoute()), $route->legs())
+            : [$this->serializeLeg($route)];
+        $activeRoute = $this->activeRoutes->findForUser($user);
+        if (!$activeRoute instanceof ActiveRoute) {
+            $activeRoute = new ActiveRoute($user, $this->routeIdentifier($route), $activeLegs);
+            $this->activeRoutes->save($activeRoute);
+        } elseif (!$activeRoute->isCurrentLegBound()) {
+            $activeRoute->replaceRoute($this->routeIdentifier($route), $activeLegs);
+        }
         $this->entityManager->flush();
 
         return $this->json(['route' => $isMultiLeg ? $this->serializeMultiLegRoute($route, $multiLegCalculator) : $this->serializeSingleLegRoute($route)]);
@@ -196,6 +209,7 @@ final class RouteCalculationController extends AbstractController
     private function serializeLeg(TradeRoute $route): array
     {
         return [
+            'legIdentifier' => $route->sourceStation()->getId().'->'.$route->destinationStation()->getId().':'.$route->tradeOffer()->commodityName(),
             'sourceSystem' => $route->sourceStation()->getSystem()->getName(),
             'sourceStation' => $route->sourceStation()->getName(),
             'destinationSystem' => $route->destinationStation()->getSystem()->getName(),
