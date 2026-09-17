@@ -8,9 +8,11 @@
     {
       "description": "Keep the production image digest pinned while following latest",
       "matchDatasources": ["docker"],
+      "matchManagers": ["kubernetes"],
       "matchPackageNames": ["ghcr.io/rindula/ed-traderoutes"],
       "pinDigests": true,
-      "digest": { "enabled": true }
+      "digest": { "enabled": true },
+      "commitMessageSuffix": " [skip ci]"
     }
   ]
 }
