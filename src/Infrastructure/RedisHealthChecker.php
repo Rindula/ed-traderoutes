@@ -12,7 +12,8 @@ final class RedisHealthChecker
     {
         try {
             $redis = RedisAdapter::createConnection($this->dsn, ['timeout' => 1]);
-            return $redis->ping() === true || $redis->ping() === '+PONG';
+            $pong = $redis->ping();
+            return $pong === true || $pong === '+PONG';
         } catch (\Throwable) {
             return false;
         }

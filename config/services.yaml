@@ -24,6 +24,8 @@ services:
             $authorizationEndpoint: '%env(OIDC_AUTHORIZATION_ENDPOINT)%'
             $tokenEndpoint: '%env(OIDC_TOKEN_ENDPOINT)%'
             $userinfoEndpoint: '%env(OIDC_USERINFO_ENDPOINT)%'
+            $jwksEndpoint: '%env(OIDC_JWKS_ENDPOINT)%'
+            $issuer: '%env(OIDC_ISSUER)%'
             $clientId: '%env(OIDC_CLIENT_ID)%'
             $clientSecret: '%env(OIDC_CLIENT_SECRET)%'
             $redirectUri: '%env(OIDC_REDIRECT_URI)%'
@@ -31,6 +33,17 @@ services:
     App\Infrastructure\RedisHealthChecker:
         arguments:
             $dsn: '%env(REDIS_DSN)%'
+
+    redis.session.client:
+        class: Redis
+        factory: ['Symfony\Component\Cache\Adapter\RedisAdapter', createConnection]
+        arguments: ['%env(REDIS_DSN)%']
+
+    redis.session.handler:
+        class: Symfony\Component\HttpFoundation\Session\Storage\Handler\RedisSessionHandler
+        arguments:
+            - '@redis.session.client'
+            - { prefix: 'edtraderoutes_session_', ttl: 86400 }
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

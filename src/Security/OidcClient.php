@@ -2,6 +2,8 @@
 
 namespace App\Security;
 
+use Firebase\JWT\JWK;
+use Firebase\JWT\JWT;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
@@ -13,6 +15,8 @@ final class OidcClient
         private readonly string $authorizationEndpoint,
         private readonly string $tokenEndpoint,
         private readonly string $userinfoEndpoint,
+        private readonly string $jwksEndpoint,
+        private readonly string $issuer,
         private readonly string $clientId,
         private readonly string $clientSecret,
         private readonly string $redirectUri,
@@ -50,9 +54,21 @@ final class OidcClient
             'client_secret' => $this->clientSecret, 'redirect_uri' => $this->redirectUri,
             'code' => $code, 'code_verifier' => $session->get('oidc_code_verifier'),
         ]])->toArray();
+        $idToken = $token['id_token'] ?? null;
+        if (!is_string($idToken) || $idToken === '') throw new \RuntimeException('OIDC token response did not contain an ID token.');
+        $jwks = $this->httpClient->request('GET', $this->jwksEndpoint)->toArray();
+        $claims = JWT::decode($idToken, JWK::parseKeySet($jwks));
+        if (($claims->iss ?? null) !== $this->issuer) throw new \RuntimeException('Invalid OIDC issuer.');
+        $audience = $claims->aud ?? null;
+        $audiences = is_array($audience) ? $audience : [$audience];
+        if (!in_array($this->clientId, $audiences, true)) throw new \RuntimeException('Invalid OIDC audience.');
+        if (($claims->nonce ?? null) !== $session->get('oidc_nonce')) throw new \RuntimeException('Invalid OIDC nonce.');
         $accessToken = $token['access_token'] ?? null;
         if (!is_string($accessToken) || $accessToken === '') throw new \RuntimeException('OIDC token response did not contain an access token.');
 
-        return $this->httpClient->request('GET', $this->userinfoEndpoint, ['auth_bearer' => $accessToken])->toArray();
+        $user = $this->httpClient->request('GET', $this->userinfoEndpoint, ['auth_bearer' => $accessToken])->toArray();
+        if (($user['sub'] ?? null) !== ($claims->sub ?? null)) throw new \RuntimeException('OIDC subject mismatch.');
+
+        return $user;
     }
 }

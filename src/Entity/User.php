@@ -36,6 +36,7 @@ class User implements UserInterface
         $this->subject = $subject;
         $this->email = $email;
         $this->displayName = $displayName;
+        $this->lastLoginAt = new \DateTimeImmutable();
     }
 
     public function getId(): string { return $this->id; }
