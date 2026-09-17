@@ -21,3 +21,5 @@
 
 /.generated-symfony/
 /.git-data/
+__pycache__/
+*.py[cod]
