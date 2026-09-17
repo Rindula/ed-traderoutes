@@ -32,6 +32,7 @@
         "symfony/serializer": "8.1.*",
         "symfony/twig-bundle": "8.1.*",
         "symfony/uid": "8.1.*",
+        "symfony/ux-live-component": "^2.27",
         "symfony/validator": "8.1.*",
         "symfony/yaml": "8.1.*"
     },

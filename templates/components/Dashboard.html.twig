@@ -1,0 +1,30 @@
+<div {{ attributes }} data-poll="delay(60s)|$render" class="dashboard">
+    {% set dashboard = this.dashboard %}
+    {% set route = dashboard.activeRoute %}
+    {% set leg = route ? route.currentLeg : null %}
+    {% set plugin = dashboard.plugin %}
+    {% set cargo = dashboard.cargo %}
+    {% set metrics = dashboard.metrics %}
+    <header class="dashboard__header">
+        <div><p class="eyebrow">ED TRADE ROUTES</p><h1>Live trade route</h1></div>
+        <span class="status-pill {{ plugin.status != 'active' ? 'status-pill--warning' : '' }}">{{ plugin.status == 'active' ? 'Plugin aktiv' : 'Manueller Modus' }}</span>
+    </header>
+    <section class="hero-card">
+        <div><p class="eyebrow">CURRENT LEG</p><h2>{{ leg ? (leg.sourceSystem ~ ' → ' ~ leg.destinationSystem) : 'No active route' }}</h2>
+            <p>{{ leg ? ('Buy ' ~ leg.commodity ~ ' at ' ~ leg.sourceStation ~ '; sell at ' ~ leg.destinationStation ~ ' (' ~ leg.quantity ~ ' t)') : 'Calculate a route to get started.' }}</p></div>
+        <div class="hero-card__value">{{ route ? metrics.creditsPerHour|round|number_format(0, ',', '.') ~ ' Cr/h' : '—' }}</div>
+    </section>
+    <div class="grid">
+        <section class="panel"><div class="panel__heading"><h2>Next stops</h2><span class="muted">up to 3</span></div>
+            <ol class="stops">{% for stop in (route ? route.nextStops : []) %}<li><span>{{ loop.index }}</span>{{ stop.system|default('Unknown') }} · {{ stop.station|default('Unknown') }}</li>{% else %}<li class="muted">No preview available</li>{% endfor %}</ol>
+        </section>
+        <section class="panel"><div class="panel__heading"><h2>Route metrics</h2></div><dl class="metrics">
+            <div><dt>Credits/hour</dt><dd>{{ metrics.creditsPerHour|round|number_format(0, ',', '.') }} Cr/h</dd></div><div><dt>Profit</dt><dd>{{ metrics.profitCredits|number_format(0, ',', '.') }} Cr</dd></div><div><dt>Jumps</dt><dd>{{ metrics.jumps }}</dd></div><div><dt>Stops</dt><dd>{{ metrics.tradeStops }}</dd></div>
+        </dl></section>
+        <section class="panel"><div class="panel__heading"><h2>Ship & sync</h2></div><dl class="metrics">
+            <div><dt>Cargo</dt><dd>{{ cargo.usedCapacity }} / {{ cargo.capacity }} t</dd></div><div><dt>Sync</dt><dd>{{ plugin.heartbeatFresh ? 'Fresh' : 'Stale' }}</dd></div><div><dt>Mode</dt><dd>{{ plugin.mode == 'active' ? 'Automatic' : 'Manual' }}</dd></div><div><dt>Safety</dt><dd>{{ cargo.uncertain ? 'Cargo uncertain' : 'Confirmed' }}</dd></div>
+        </dl></section>
+        <section class="panel"><div class="panel__heading"><h2>Alternatives</h2></div><p class="muted">{{ dashboard.alternatives is empty ? 'No alternatives available.' : 'Select an alternative to activate it.' }}</p></section>
+    </div>
+    <p class="muted dashboard__updated">{{ dashboard.routeCalculatedAt ? 'Last route calculation: ' ~ dashboard.routeCalculatedAt : 'No calculation yet' }}</p>
+</div>
