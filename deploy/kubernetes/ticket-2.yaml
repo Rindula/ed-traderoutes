@@ -1,0 +1,162 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ed-traderoutes
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ed-traderoutes-config
+  namespace: ed-traderoutes
+data:
+  APP_ENV: prod
+  DATABASE_URL: postgresql://app:change-me@postgres:5432/app?serverVersion=16&charset=utf8
+  REDIS_DSN: redis://:change-me@redis:6379
+  MESSENGER_TRANSPORT_DSN: redis://:change-me@redis:6379/messages
+  OIDC_REDIRECT_URI: https://trade-routes.example.com/auth/callback
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ed-traderoutes-secrets
+  namespace: ed-traderoutes
+type: Opaque
+stringData:
+  APP_SECRET: replace-me
+  OIDC_AUTHORIZATION_ENDPOINT: https://authentik.example.com/application/o/authorize/
+  OIDC_TOKEN_ENDPOINT: https://authentik.example.com/application/o/token/
+  OIDC_USERINFO_ENDPOINT: https://authentik.example.com/application/o/userinfo/
+  OIDC_CLIENT_ID: replace-me
+  OIDC_CLIENT_SECRET: replace-me
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ed-traderoutes-web
+  namespace: ed-traderoutes
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: ed-traderoutes-web }
+  template:
+    metadata:
+      labels: { app: ed-traderoutes-web }
+    spec:
+      containers:
+        - name: web
+          image: ghcr.io/rindula/ed-traderoutes:latest
+          ports: [{ name: http, containerPort: 8000 }]
+          envFrom:
+            - configMapRef: { name: ed-traderoutes-config }
+            - secretRef: { name: ed-traderoutes-secrets }
+          readinessProbe:
+            httpGet: { path: /health/ready, port: http }
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /health/live, port: http }
+            initialDelaySeconds: 10
+            periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ed-traderoutes-web
+  namespace: ed-traderoutes
+spec:
+  selector: { app: ed-traderoutes-web }
+  ports: [{ name: http, port: 80, targetPort: http }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ed-traderoutes-worker
+  namespace: ed-traderoutes
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: ed-traderoutes-worker }
+  template:
+    metadata:
+      labels: { app: ed-traderoutes-worker }
+    spec:
+      containers:
+        - name: worker
+          image: ghcr.io/rindula/ed-traderoutes:latest
+          command: ["php", "bin/console", "messenger:consume", "async", "--time-limit=3600"]
+          envFrom:
+            - configMapRef: { name: ed-traderoutes-config }
+            - secretRef: { name: ed-traderoutes-secrets }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: ed-traderoutes
+spec:
+  selector: { app: postgres }
+  ports: [{ port: 5432, targetPort: 5432 }]
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: ed-traderoutes
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector:
+    matchLabels: { app: postgres }
+  template:
+    metadata:
+      labels: { app: postgres }
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports: [{ containerPort: 5432 }]
+          env:
+            - { name: POSTGRES_DB, value: app }
+            - { name: POSTGRES_USER, value: app }
+            - { name: POSTGRES_PASSWORD, value: change-me }
+          volumeMounts: [{ name: data, mountPath: /var/lib/postgresql/data }]
+  volumeClaimTemplates:
+    - metadata: { name: data }
+      spec:
+        accessModes: [ReadWriteOnce]
+        resources: { requests: { storage: 20Gi } }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: ed-traderoutes
+spec:
+  selector: { app: redis }
+  ports: [{ port: 6379, targetPort: 6379 }]
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis
+  namespace: ed-traderoutes
+spec:
+  serviceName: redis
+  replicas: 1
+  selector:
+    matchLabels: { app: redis }
+  template:
+    metadata:
+      labels: { app: redis }
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          command: ["redis-server", "--requirepass", "change-me", "--appendonly", "yes"]
+          ports: [{ containerPort: 6379 }]
+          volumeMounts: [{ name: data, mountPath: /data }]
+  volumeClaimTemplates:
+    - metadata: { name: data }
+      spec:
+        accessModes: [ReadWriteOnce]
+        resources: { requests: { storage: 5Gi } }
