@@ -14,14 +14,13 @@ class_exists(CleanupMarketDataCommand::class);
 
 final class CleanupMarketDataCommandTest extends TestCase
 {
-    public function testItReportsCountsAndRawNoOp(): void
+    public function testMissingRawRetentionStoreFailsClosed(): void
     {
         $store = new InMemoryCleanupStore(12, null);
         $tester = new CommandTester(new CleanupMarketDataCommand($store));
 
-        self::assertSame(0, $tester->execute([]));
-        self::assertStringContainsString('Removed 12 normalized market observation(s).', $tester->getDisplay());
-        self::assertStringContainsString('Raw EDDN cleanup skipped', $tester->getDisplay());
+        self::assertSame(1, $tester->execute([]));
+        self::assertStringContainsString('Raw EDDN cleanup failed', $tester->getDisplay());
         self::assertFalse($store->dryRun);
     }
 

@@ -74,6 +74,9 @@ final class RouteCalculator
                 $destinationMarkets = $latestObservations[$destinationStation->getId()] ?? [];
 
                 foreach ($sourceMarkets as $commodityName => $sourceObservation) {
+                    if (!$request->acceptsCommodity($commodityName)) {
+                        continue;
+                    }
                     $destinationObservation = $destinationMarkets[$commodityName] ?? null;
                     if (!$destinationObservation instanceof MarketObservation) {
                         continue;

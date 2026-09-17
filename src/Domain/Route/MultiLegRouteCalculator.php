@@ -142,13 +142,14 @@ final class MultiLegRouteCalculator
                 $latestObservations[$currentStation->getId()] ?? [],
             );
 
-            [$offer, $cargoAfterPurchase] = $this->allocateCargo(
+            [$offers, $cargoAfterPurchase] = $this->allocateCargo(
+                $request->legRequest(),
                 $latestObservations[$currentStation->getId()] ?? [],
                 $latestObservations[$destinationStation->getId()] ?? [],
                 $cargo,
                 $currentStation->getName(),
             );
-            if ($offer === null) {
+            if ($offers === []) {
                 $cargo = $cargoBefore;
                 continue;
             }
@@ -158,7 +159,7 @@ final class MultiLegRouteCalculator
             $tradeRoute = new TradeRoute(
                 $currentStation,
                 $destinationStation,
-                $offer,
+                $offers,
                 $distance,
                 $jumpCount,
                 $this->estimatedDurationSeconds($request->legRequest(), $currentStation, $destinationStation, $jumpCount),
@@ -275,14 +276,13 @@ final class MultiLegRouteCalculator
     /**
      * Allocate the available hold to the most profitable executable offers.
      *
-     * The first allocation is retained as the leg's representative offer for
-     * the existing TradeRoute API; the manifest contains every allocation.
      *
      * @param array<string, MarketObservation> $sourceMarkets
      * @param array<string, MarketObservation> $destinationMarkets
-     * @return array{0: TradeOffer|null, 1: CargoManifest}
+     * @return array{0: list<TradeOffer>, 1: CargoManifest}
      */
     private function allocateCargo(
+        RouteCalculationRequest $request,
         array $sourceMarkets,
         array $destinationMarkets,
         CargoManifest $cargoBeforePurchase,
@@ -291,11 +291,14 @@ final class MultiLegRouteCalculator
     {
         $cargo = clone $cargoBeforePurchase;
         if ($cargo->remainingCapacity() < 1) {
-            return [null, $cargo];
+            return [[], $cargo];
         }
 
         $offers = [];
         foreach ($sourceMarkets as $commodityName => $sourceObservation) {
+            if (!$this->acceptsCommodity($request, $commodityName)) {
+                continue;
+            }
             $destinationObservation = $destinationMarkets[$commodityName] ?? null;
             if (!$destinationObservation instanceof MarketObservation) {
                 continue;
@@ -313,23 +316,24 @@ final class MultiLegRouteCalculator
             ?: ($left->commodityName() <=> $right->commodityName())
         );
 
-        $primaryOffer = null;
+        $allocatedOffers = [];
         foreach ($offers as $offer) {
             $quantity = min($offer->quantity(), $cargo->remainingCapacity());
             if ($quantity < 1) {
                 break;
             }
 
+            $allocatedOffer = $offer->withQuantity($quantity);
             $cargo->buy(
                 $offer->commodityName(),
                 $quantity,
                 $offer->buyPrice(),
                 $purchaseStation,
             );
-            $primaryOffer ??= $offer;
+            $allocatedOffers[] = $allocatedOffer;
         }
 
-        return [$primaryOffer, $cargo];
+        return [$allocatedOffers, $cargo];
     }
 
     /**
@@ -379,6 +383,11 @@ final class MultiLegRouteCalculator
         }
 
         return $latest;
+    }
+
+    private function acceptsCommodity(RouteCalculationRequest $request, string $commodityName): bool
+    {
+        return $request->acceptsCommodity($commodityName);
     }
 
     private function systemDistance(Station $source, Station $destination): ?float

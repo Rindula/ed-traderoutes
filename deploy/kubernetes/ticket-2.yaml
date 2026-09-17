@@ -10,7 +10,7 @@ metadata:
   namespace: ed-traderoutes
 data:
   APP_ENV: prod
-  OIDC_REDIRECT_URI: https://trade-routes.example.com/auth/callback
+  OIDC_REDIRECT_URI: https://trade-routes.rindula.de/auth/callback
 ---
 apiVersion: v1
 kind: Secret
@@ -216,13 +216,15 @@ kind: Ingress
 metadata:
   name: ed-traderoutes
   namespace: ed-traderoutes
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
-  ingressClassName: nginx
+  ingressClassName: traefik
   tls:
-    - hosts: [trade-routes.example.com]
+    - hosts: [trade-routes.rindula.de]
       secretName: trade-routes-tls
   rules:
-    - host: trade-routes.example.com
+    - host: trade-routes.rindula.de
       http:
         paths:
           - path: /

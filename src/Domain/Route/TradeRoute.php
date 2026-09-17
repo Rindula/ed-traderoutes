@@ -9,14 +9,22 @@ use App\Entity\Station;
  */
 final readonly class TradeRoute
 {
+    /** @var list<TradeOffer> */
+    private array $tradeOffers;
+
     public function __construct(
         private Station $sourceStation,
         private Station $destinationStation,
-        private TradeOffer $tradeOffer,
+        TradeOffer|array $tradeOffer,
         private float $systemDistance,
         private int $jumpCount,
         private float $estimatedDurationSeconds,
     ) {
+        $offers = is_array($tradeOffer) ? array_values($tradeOffer) : [$tradeOffer];
+        if ($offers === [] || array_filter($offers, static fn (mixed $offer): bool => !$offer instanceof TradeOffer) !== []) {
+            throw new \InvalidArgumentException('A trade route requires at least one trade offer.');
+        }
+        $this->tradeOffers = $offers;
         if ($this->sourceStation->getSystem()->getId() === $this->destinationStation->getSystem()->getId()) {
             throw new \InvalidArgumentException('A single-leg trade must connect two different systems.');
         }
@@ -44,9 +52,15 @@ final readonly class TradeRoute
         return $this->destinationStation;
     }
 
+    /** @return list<TradeOffer> */
+    public function tradeOffers(): array
+    {
+        return $this->tradeOffers;
+    }
+
     public function tradeOffer(): TradeOffer
     {
-        return $this->tradeOffer;
+        return $this->tradeOffers[0];
     }
 
     public function systemDistance(): float
@@ -66,7 +80,7 @@ final readonly class TradeRoute
 
     public function netProfitCredits(): int
     {
-        return $this->tradeOffer->totalProfitCredits();
+        return array_sum(array_map(static fn (TradeOffer $offer): int => $offer->totalProfitCredits(), $this->tradeOffers));
     }
 
     public function creditsPerHour(): float

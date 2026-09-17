@@ -27,6 +27,8 @@ final readonly class RouteCalculationRequest
         private int $maxDataAgeSeconds = self::DEFAULT_MAX_DATA_AGE_SECONDS,
         private ?string $landingClassFilter = null,
         private array $allowedStationTypes = [],
+        private array $illegalCommodities = [],
+        private bool $allowIllegalCommodities = false,
         ?RouteTimeEstimates $timeEstimates = null,
     ) {
         if ($this->shipJumpRange <= 0.0 || !is_finite($this->shipJumpRange)) {
@@ -58,6 +60,11 @@ final readonly class RouteCalculationRequest
         foreach ($this->allowedStationTypes as $stationType) {
             if (!is_string($stationType) || $stationType === '') {
                 throw new \InvalidArgumentException('Allowed station types must be non-empty strings.');
+            }
+        }
+        foreach ($this->illegalCommodities as $commodity) {
+            if (!is_string($commodity) || trim($commodity) === '') {
+                throw new \InvalidArgumentException('Illegal commodities must be non-empty strings.');
             }
         }
 
@@ -113,6 +120,14 @@ final readonly class RouteCalculationRequest
     public function timeEstimates(): RouteTimeEstimates
     {
         return $this->timeEstimates;
+    }
+
+    /** @return list<string> */
+    public function illegalCommodities(): array { return $this->illegalCommodities; }
+
+    public function acceptsCommodity(string $commodityName): bool
+    {
+        return $this->allowIllegalCommodities || !in_array(strtolower($commodityName), array_map('strtolower', $this->illegalCommodities), true);
     }
 
     public function acceptsStation(Station $station): bool

@@ -88,6 +88,22 @@ final readonly class TradeOffer
         return $this->profitPerUnit() * $this->quantity;
     }
 
+    public function withQuantity(int $quantity): self
+    {
+        if ($quantity < 1 || $quantity > $this->quantity) {
+            throw new \InvalidArgumentException('The allocated quantity must be positive and within the offer quantity.');
+        }
+
+        return new self(
+            $this->commodityName,
+            $this->buyPrice,
+            $this->sellPrice,
+            $quantity,
+            $this->sourceObservation,
+            $this->destinationObservation,
+        );
+    }
+
     public function sourceObservation(): MarketObservation
     {
         return $this->sourceObservation;

@@ -3,6 +3,31 @@ kind: Namespace
 metadata:
   name: ed-traderoutes
 ---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: ed-traderoutes-operations
+  namespace: ed-traderoutes
+  labels: { prometheus: kube-prometheus, role: alert-rules }
+spec:
+  groups:
+    - name: ed-traderoutes.operations
+      rules:
+        - alert: EdTradeRoutesScheduledJobFailed
+          expr: max by (namespace, job_name) (kube_job_status_failed{namespace="ed-traderoutes"}) > 0
+          for: 10m
+          labels: { severity: warning }
+          annotations:
+            summary: ED Trade Routes scheduled job failed
+            description: A scheduled ED Trade Routes job has failed and requires investigation.
+        - alert: EdTradeRoutesBackupMissing
+          expr: time() - max by (namespace, cronjob) (kube_cronjob_status_last_success_time{namespace="ed-traderoutes", cronjob="ed-traderoutes-postgres-backup"}) > 172800
+          for: 15m
+          labels: { severity: critical }
+          annotations:
+            summary: ED Trade Routes backup is stale
+            description: No successful PostgreSQL backup has been recorded for 48 hours.
+---
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -10,13 +35,13 @@ metadata:
   namespace: ed-traderoutes
 data:
   APP_ENV: prod
-  OIDC_REDIRECT_URI: https://trade-routes.example.com/auth/callback
+  OIDC_REDIRECT_URI: https://trade-routes.rindula.de/auth/callback
   # The application image must expose these commands for the scheduled jobs.
   CATALOG_REFRESH_COMMAND: app:catalog:refresh
   RETENTION_CLEANUP_COMMAND: app:cleanup-market-data
   RETENTION_MARKET_DAYS: "30"
   RETENTION_RAW_EVENT_HOURS: "72"
-  CATALOG_PROVIDER_COMMAND: ""
+  CATALOG_PROVIDER_COMMAND: "php bin/console app:catalog:refresh"
 ---
 apiVersion: v1
 kind: Secret
@@ -170,7 +195,7 @@ spec:
       spec:
         accessModes: [ReadWriteOnce]
         # Replace with the cluster's provisioner. This is deliberately explicit.
-        storageClassName: ed-traderoutes-storage
+        # Omit storageClassName to use the cluster's configured default StorageClass.
         resources: { requests: { storage: 20Gi } }
 ---
 apiVersion: v1
@@ -218,7 +243,7 @@ spec:
       spec:
         accessModes: [ReadWriteOnce]
         # Keep this equal to the PostgreSQL StorageClass unless the cluster says otherwise.
-        storageClassName: ed-traderoutes-storage
+        # Omit storageClassName to use the cluster's configured default StorageClass.
         resources: { requests: { storage: 5Gi } }
 ---
 apiVersion: batch/v1
@@ -403,13 +428,15 @@ kind: Ingress
 metadata:
   name: ed-traderoutes
   namespace: ed-traderoutes
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
-  ingressClassName: nginx
+  ingressClassName: traefik
   tls:
-    - hosts: [trade-routes.example.com]
+    - hosts: [trade-routes.rindula.de]
       secretName: trade-routes-tls
   rules:
-    - host: trade-routes.example.com
+    - host: trade-routes.rindula.de
       http:
         paths:
           - path: /
