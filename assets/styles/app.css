@@ -1,3 +1,15 @@
-body {
-    background-color: skyblue;
-}
+:root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, sans-serif; background: #08111f; color: #e7edf7; }
+body { margin: 0; background: radial-gradient(circle at top right, #17345b, #08111f 48%); min-height: 100vh; }
+.dashboard { max-width: 1120px; margin: 0 auto; padding: 48px 24px; }
+.dashboard__header, .panel__heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+.eyebrow { color: #65d9c6; font-size: .75rem; font-weight: 800; letter-spacing: .14em; margin: 0 0 8px; }
+h1, h2, p { margin-top: 0; } h1 { font-size: clamp(2rem, 5vw, 4rem); margin-bottom: 32px; } h2 { margin-bottom: 8px; }
+.hero-card, .panel { background: rgba(16, 30, 52, .88); border: 1px solid #294568; border-radius: 18px; box-shadow: 0 18px 50px rgba(0,0,0,.18); }
+.hero-card { display: flex; justify-content: space-between; align-items: end; padding: 32px; margin-bottom: 20px; } .hero-card__value { color: #65d9c6; font-size: 1.6rem; font-weight: 800; }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; } .panel { padding: 24px; min-height: 150px; }
+.status-pill { background: #174d48; color: #8df3df; padding: 8px 12px; border-radius: 999px; font-size: .85rem; } .status-pill--warning { background: #65461d; color: #ffd58a; }
+.muted { color: #8ea3bd; } .notice { padding: 12px 16px; border-radius: 10px; margin-bottom: 16px; } .notice--error { background: #582c37; color: #ffc2c9; }
+.stops { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 12px; } .stops li { display: flex; gap: 12px; align-items: center; } .stops span { color: #65d9c6; font-weight: 800; }
+.metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0 0; } .metrics div { border-top: 1px solid #294568; padding-top: 10px; } dt { color: #8ea3bd; font-size: .8rem; } dd { margin: 4px 0 0; font-weight: 700; }
+.dashboard__updated { margin-top: 20px; font-size: .85rem; }
+@media (max-width: 720px) { .dashboard { padding: 28px 16px; } .hero-card { display: block; } .hero-card__value { margin-top: 24px; } .grid { grid-template-columns: 1fr; } }

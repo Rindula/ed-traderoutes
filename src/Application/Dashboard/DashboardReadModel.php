@@ -1,16 +1,15 @@
 <?php
 
-namespace AppApplicationDashboard;
+namespace App\Application\Dashboard;
 
-use AppEntityActiveRoute;
-use AppEntityCargoState;
-use AppEntityPluginStatus;
-use AppEntityRouteSnapshot;
-use AppEntityUser;
-use AppRepositoryActiveRouteRepository;
-use AppRepositoryCargoStateRepository;
-use AppRepositoryPluginStatusRepository;
-use AppRepositoryRouteSnapshotRepository;
+use App\Entity\ActiveRoute;
+use App\Entity\CargoState;
+use App\Entity\PluginStatus;
+use App\Entity\User;
+use App\Repository\ActiveRouteRepository;
+use App\Repository\CargoStateRepository;
+use App\Repository\PluginStatusRepository;
+use App\Repository\RouteSnapshotRepository;
 
 final class DashboardReadModel
 {

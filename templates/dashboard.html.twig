@@ -1,0 +1,16 @@
+{% extends 'base.html.twig' %}
+{% block title %}ED Trade Routes{% endblock %}
+{% block body %}
+<main class="dashboard" id="dashboard" data-dashboard-endpoint="{{ path('dashboard_json') }}">
+    <header class="dashboard__header"><div><p class="eyebrow">ED TRADE ROUTES</p><h1>Live trade route</h1></div><span id="plugin-status" class="status-pill">Loading…</span></header>
+    <div id="dashboard-error" class="notice notice--error" hidden></div>
+    <section class="hero-card"><div><p class="eyebrow">CURRENT LEG</p><h2 id="current-route">No active route</h2><p id="current-action">Calculate a route to get started.</p></div><div class="hero-card__value" id="current-profit">—</div></section>
+    <div class="grid">
+        <section class="panel"><div class="panel__heading"><h2>Next stops</h2><span class="muted">up to 3</span></div><ol id="next-stops" class="stops"><li class="muted">No preview available</li></ol></section>
+        <section class="panel"><div class="panel__heading"><h2>Route metrics</h2></div><dl id="metrics" class="metrics"></dl></section>
+        <section class="panel"><div class="panel__heading"><h2>Ship & sync</h2></div><dl id="cargo" class="metrics"></dl></section>
+        <section class="panel"><div class="panel__heading"><h2>Alternatives</h2></div><div id="alternatives"><p class="muted">No alternatives available.</p></div></section>
+    </div>
+    <p id="updated" class="muted dashboard__updated"></p>
+</main>
+{% endblock %}
