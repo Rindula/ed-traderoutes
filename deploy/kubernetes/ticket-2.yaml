@@ -145,7 +145,7 @@ spec:
     - metadata: { name: data }
       spec:
         accessModes: [ReadWriteOnce]
-        storageClassName: trade-routes-storage
+        # Omit storageClassName so the cluster's configured default StorageClass is used.
         resources: { requests: { storage: 20Gi } }
 ---
 apiVersion: v1
@@ -185,7 +185,7 @@ spec:
     - metadata: { name: data }
       spec:
         accessModes: [ReadWriteOnce]
-        storageClassName: trade-routes-storage
+        # Set storageClassName here when the cluster has no default StorageClass.
         resources: { requests: { storage: 5Gi } }
 ---
 apiVersion: batch/v1
