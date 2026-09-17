@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use Doctrine\DBAL\Connection;
 use App\Infrastructure\RedisHealthChecker;
+use App\Repository\PluginStatusRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
@@ -11,14 +12,18 @@ use Symfony\Component\Routing\Attribute\Route;
 final class StatusController extends AbstractController
 {
     #[Route('/status', name: 'status', methods: ['GET'])]
-    public function status(): JsonResponse
+    public function status(PluginStatusRepository $statuses): JsonResponse
     {
         $user = $this->getUser();
+        $plugin = $user instanceof \App\Entity\User ? $statuses->findOneBy(['user' => $user]) : null;
         return $this->json(['user' => [
             'id' => method_exists($user, 'getId') ? $user->getId() : null,
             'subject' => $user?->getUserIdentifier(),
             'displayName' => method_exists($user, 'getDisplayName') ? $user->getDisplayName() : null,
-        ], 'plugin' => ['status' => 'inaktiv'], 'mode' => 'manuell']);
+        ], 'plugin' => [
+            'status' => $plugin?->isActive() ? 'aktiv' : 'inaktiv',
+            'lastHeartbeatAt' => $plugin?->getLastHeartbeatAt()?->format(DATE_ATOM),
+        ], 'mode' => $plugin?->getMode() ?? 'manuell']);
     }
 
     #[Route('/health/live', name: 'health_live', methods: ['GET'])]
