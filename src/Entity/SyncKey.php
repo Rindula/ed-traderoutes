@@ -17,7 +17,7 @@ use Symfony\Component\Uid\Ulid;
 final class SyncKey
 {
     private const TOKEN_BYTES = 32;
-    private const MASK_SUFFIX_CHARACTERS = 4;
+    private const MASK_VISIBLE_CHARACTERS = 4;
 
     #[ORM\Id]
     #[ORM\Column(length: 26)]
@@ -133,6 +133,10 @@ final class SyncKey
     /** Reveal only at an already authorized application boundary. */
     public function revealToken(SyncKeyCipher $cipher): string
     {
+        if ($this->isRevoked()) {
+            throw new \LogicException('A revoked synchronization key cannot be revealed.');
+        }
+
         return $cipher->decrypt($this->encryptedToken);
     }
 
@@ -162,11 +166,12 @@ final class SyncKey
     private static function maskToken(string $token): string
     {
         $length = strlen($token);
-        if ($length <= self::MASK_SUFFIX_CHARACTERS) {
+        if ($length <= self::MASK_VISIBLE_CHARACTERS * 2) {
             return str_repeat('*', $length);
         }
 
-        return str_repeat('*', $length - self::MASK_SUFFIX_CHARACTERS)
-            .substr($token, -self::MASK_SUFFIX_CHARACTERS);
+        return substr($token, 0, self::MASK_VISIBLE_CHARACTERS)
+            .str_repeat('*', $length - self::MASK_VISIBLE_CHARACTERS * 2)
+            .substr($token, -self::MASK_VISIBLE_CHARACTERS);
     }
 }
