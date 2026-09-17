@@ -167,6 +167,12 @@ final class PluginSyncController extends AbstractController
         }
 
         if ($isPurchase) {
+            if (!$this->purchaseMatchesCurrentLeg($active, $event->getPayload())) {
+                if ($cargo instanceof CargoState) {
+                    $cargo->markUncertain($event->getSourceTimestamp());
+                }
+                return true;
+            }
             $active->bindCurrentLeg($event->getSourceTimestamp());
             if ($cargo instanceof CargoState && !$cargo->isUncertain()) {
                 try {
@@ -272,7 +278,7 @@ final class PluginSyncController extends AbstractController
         $expected = $leg['destinationStation'] ?? $leg['targetStation'] ?? $leg['destination'] ?? null;
         $actual = $payload['station'] ?? $payload['stationName'] ?? null;
         if ($expected === null || $actual === null) {
-            return true;
+            return false;
         }
         if (is_array($expected)) {
             $expected = $expected['name'] ?? $expected['stationName'] ?? null;
@@ -281,6 +287,25 @@ final class PluginSyncController extends AbstractController
             $actual = $actual['name'] ?? $actual['stationName'] ?? null;
         }
         return is_string($expected) && is_string($actual) && $expected === $actual;
+    }
+
+    private function purchaseMatchesCurrentLeg(ActiveRoute $route, array $payload): bool
+    {
+        $leg = $route->getCurrentLeg() ?? [];
+        $expectedStation = $leg['sourceStation'] ?? $leg['originStation'] ?? null;
+        $actualStation = $payload['station'] ?? $payload['stationName'] ?? null;
+        $expectedCommodity = $leg['commodity'] ?? null;
+        $actualCommodity = $payload['commodity'] ?? $payload['commodityName'] ?? null;
+        $quantity = $payload['quantity'] ?? $payload['amount'] ?? null;
+
+        if (!is_string($expectedStation) || !is_string($actualStation)
+            || !is_string($expectedCommodity) || !is_string($actualCommodity)
+            || !is_int($quantity) || $quantity < 1) {
+            return false;
+        }
+
+        return $expectedStation === $actualStation
+            && $expectedCommodity === $actualCommodity;
     }
 
     /** @return array<string, mixed>|null */
