@@ -22,7 +22,7 @@ final class DashboardController extends AbstractController
     #[Route('/dashboard', name: 'dashboard', methods: ['GET'])]
     public function page(): Response
     {
-        return $this->render('dashboard.html.twig', ['dashboard' => $this->data()]);
+        return $this->render('dashboard.html.twig');
     }
 
     #[Route('/api/dashboard', name: 'dashboard_json', methods: ['GET'])]
