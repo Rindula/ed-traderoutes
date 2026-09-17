@@ -30,6 +30,10 @@ services:
             $clientSecret: '%env(OIDC_CLIENT_SECRET)%'
             $redirectUri: '%env(OIDC_REDIRECT_URI)%'
 
+    App\Security\SyncKeyCipher:
+        arguments:
+            $appSecret: '%env(APP_SECRET)%'
+
     App\Infrastructure\RedisHealthChecker:
         arguments:
             $dsn: '%env(REDIS_DSN)%'
