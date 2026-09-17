@@ -2,7 +2,12 @@
 
 `deploy/kubernetes/ticket-9.yaml` is the Kubernetes deployment successor to
 `ticket-2.yaml`. Apply this file as the complete deployment manifest after
-replacing the secret and SMB example values.
+replacing the application secret values.
+
+The manifest contains the generated application, PostgreSQL, and Redis
+secrets. Replace `OIDC_CLIENT_ID` and `OIDC_CLIENT_SECRET` with the values from
+Authentik before syncing. For production, prefer SealedSecrets or an external
+secret manager so credentials are not stored in Git.
 
 The manifest targets k3s' Traefik ingress and cert-manager. It publishes the
 application at `https://trade-routes.rindula.de`, requests the certificate from
@@ -22,13 +27,7 @@ workflow does not publish untrusted fork code. The Kubernetes manifest uses the
 ## Storage
 
 Both StatefulSet volume claim templates omit `storageClassName`, so k3s uses
-the cluster's configured default StorageClass. Do not change the access mode
-or reuse the SMB backup class for application data.
-
-Before applying, replace the SMB CSI `source`, `username`, `password`, and
-`domain` examples. The SMB PV uses `smb.csi.k8s.io`, `ReadWriteMany`, and
-`Retain`; it is only mounted by the PostgreSQL backup CronJob. Web, worker,
-PostgreSQL, Redis, catalog, and cleanup pods have no SMB volume or mount.
+the cluster's configured default StorageClass.
 
 ## Scheduled operations
 
@@ -40,27 +39,18 @@ PostgreSQL, Redis, catalog, and cleanup pods have no SMB volume or mount.
 - `ed-traderoutes-retention-cleanup` runs daily at 03:30 UTC and invokes
   `app:cleanup-market-data` with the ADR 0013 limits: normalized market history
   30 days and raw events 72 hours.
-- `ed-traderoutes-postgres-backup` runs daily at 04:00 UTC and writes a custom
-  `pg_dump` archive to `/backup` on the SMB share.
 
 All operation Jobs use `concurrencyPolicy: Forbid`, a deadline, bounded history,
 and a retrying `backoffLimit`. A non-zero container exit leaves the Job failed
-after retries. The included `PrometheusRule` alerts on failed Jobs and on a
-stale PostgreSQL backup; the existing labels and annotations remain available
-for other monitoring integrations.
-
-An SMB outage therefore retries and becomes visible as a failed backup Job;
-it cannot make the web or worker deployment unready. The normal web/worker
-HTTP/exec probes remain independent of the backup volume.
+after retries. The included `PrometheusRule` alerts on failed Jobs; the
+existing labels and annotations remain available for other monitoring
+integrations. The normal web/worker HTTP/exec probes remain independent of
+scheduled operations.
 
 ## Verification
 
 ```sh
 kubectl apply --dry-run=server -f deploy/kubernetes/ticket-9.yaml
 kubectl get cronjobs,jobs,pvc -n ed-traderoutes
-kubectl describe job -l workload=postgres-backup -n ed-traderoutes
+kubectl describe job -l workload=retention -n ed-traderoutes
 ```
-
-For a controlled backup test, temporarily make the SMB source unreachable and
-verify retries, a failed Job, and the monitoring alert. Restore the source
-before the next scheduled run.
