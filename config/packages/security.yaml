@@ -25,6 +25,8 @@ security:
         - { path: ^/auth/callback$, roles: PUBLIC_ACCESS }
         - { path: ^/api/plugin/, roles: PUBLIC_ACCESS }
         - { path: ^/api/routes/, roles: ROLE_USER }
+        - { path: ^/api/dashboard, roles: ROLE_USER }
+        - { path: ^/dashboard$, roles: ROLE_USER }
         - { path: ^/status$, roles: ROLE_USER }
 
 when@test:
