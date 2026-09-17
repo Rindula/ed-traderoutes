@@ -21,9 +21,15 @@ final class OidcAuthenticator extends AbstractAuthenticator implements Authentic
 
     public function authenticate(Request $request): Passport
     {
-        $claims = $this->oidcClient->fetchUser($request, $request->getSession());
+        try {
+            $claims = $this->oidcClient->fetchUser($request, $request->getSession());
+        } catch (\Throwable $exception) {
+            throw new AuthenticationException('OIDC authentication failed.', 0, $exception);
+        }
         $subject = $claims['sub'] ?? null;
-        if (!is_string($subject) || $subject === '') throw new \RuntimeException('OIDC response did not contain a subject.');
+        if (!is_string($subject) || $subject === '') {
+            throw new AuthenticationException('OIDC response did not contain a subject.');
+        }
         $email = is_string($claims['email'] ?? null) ? $claims['email'] : null;
         $name = is_string($claims['name'] ?? null) ? $claims['name'] : ($email ?? $subject);
         return new SelfValidatingPassport(new UserBadge($subject, fn (): object => $this->users->findOrCreateFromOidc($subject, $email, $name)));
