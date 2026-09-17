@@ -3,7 +3,7 @@ WORKDIR /app
 COPY composer.json composer.lock symfony.lock ./
 RUN composer install --no-dev --no-interaction --no-progress --prefer-dist --ignore-platform-req=ext-redis --no-scripts
 
-FROM php:8.4-cli-alpine
+FROM php:8.5-cli-alpine
 RUN apk add --no-cache postgresql-dev $PHPIZE_DEPS \
     && docker-php-ext-install pdo_pgsql \
     && pecl install redis \
