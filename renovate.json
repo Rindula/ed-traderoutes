@@ -1,0 +1,28 @@
+{
+    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+    "assignees": ["Rindula"],
+    "extends": [
+        "config:recommended"
+    ],
+    "lockFileMaintenance": {
+      "enabled": true,
+    },
+    "packageRules": [
+        {
+          "description": "Automerge tested non-major updates",
+          "matchUpdateTypes": ["minor", "patch"],
+          "matchCurrentVersion": "!/^0/",
+          "automerge": true,
+          "automergeType": "pr",
+          "platformAutomerge": true
+        },
+        {
+          "description": "Require approval for major updates",
+          "matchUpdateTypes": ["major"],
+          "dependencyDashboardApproval": true
+        }
+    ],
+    "vulnerabilityAlerts": {
+        "automerge": true
+    }
+}
