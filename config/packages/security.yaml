@@ -23,6 +23,8 @@ security:
         - { path: ^/health/, roles: PUBLIC_ACCESS }
         - { path: ^/login$, roles: PUBLIC_ACCESS }
         - { path: ^/auth/callback$, roles: PUBLIC_ACCESS }
+        - { path: ^/api/plugin/, roles: PUBLIC_ACCESS }
+        - { path: ^/api/routes/, roles: ROLE_USER }
         - { path: ^/status$, roles: ROLE_USER }
 
 when@test:
