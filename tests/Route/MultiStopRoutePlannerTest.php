@@ -107,6 +107,34 @@ final class MultiStopRoutePlannerTest extends TestCase
         self::assertSame(2, $withinBoth->totalTradeStops());
     }
 
+    public function testUsesCatalogOnlySystemsAsJumpRelays(): void
+    {
+        $this->requireTicket7Planner();
+        $catalogAt = new DateTimeImmutable('2026-09-17T08:00:00+00:00');
+        $origin = new System('Origin', 'test-fixture', $catalogAt, 0.0, 0.0, 0.0, true);
+        $relay = new System('Relay', 'test-fixture', $catalogAt, 4.0, 0.0, 0.0, true);
+        $destination = new System('Destination', 'test-fixture', $catalogAt, 8.0, 0.0, 0.0, true);
+        $originStation = $this->station($origin, 'Origin Market');
+        $destinationStation = $this->station($destination, 'Destination Market');
+
+        $route = $this->planner()->calculateBest(
+            $this->request($origin, maxTotalJumps: 2, maxStops: 1),
+            [$originStation, $destinationStation],
+            [
+                $this->market($originStation, 'Gold', buyPrice: 100, stock: 10),
+                $this->market($destinationStation, 'Gold', sellPrice: 200, demand: 10),
+            ],
+            [$relay],
+        );
+
+        self::assertNotNull($route);
+        self::assertSame(2, $route->totalJumps());
+        self::assertSame(['Origin', 'Relay', 'Destination'], array_map(
+            static fn (System $system): string => $system->getName(),
+            $route->legs()[0]->jumpPath(),
+        ));
+    }
+
     public function testRepeatedStationsRemainValidWhenTheCargoPlanIsExecutable(): void
     {
         $this->requireTicket7Planner();
@@ -153,6 +181,31 @@ final class MultiStopRoutePlannerTest extends TestCase
         self::assertSame(['Gold' => 10], $this->cargoContents($route->legs()[1]->cargoBefore()));
         self::assertSame(['Silver' => 10], $this->cargoContents($route->legs()[1]->cargoAfter()));
         self::assertSame(10, $route->legs()[0]->cargoAfter()->capacity());
+    }
+
+    public function testAlegAllocatesCapacityAcrossMultipleCommodities(): void
+    {
+        $this->requireTicket7Planner();
+        [$a, $aStation, $b, $bStation, $c, $cStation] = $this->threeStopFixture();
+
+        $route = $this->planner()->calculateBest(
+            $this->request($a, cargoCapacity: 10, maxTotalJumps: 1, maxStops: 1),
+            [$aStation, $bStation, $cStation],
+            [
+                $this->market($aStation, 'Gold', buyPrice: 100, stock: 6),
+                $this->market($bStation, 'Gold', sellPrice: 220, demand: 6),
+                $this->market($aStation, 'Silver', buyPrice: 50, stock: 8),
+                $this->market($bStation, 'Silver', sellPrice: 130, demand: 8),
+            ],
+        );
+
+        self::assertNotNull($route);
+        self::assertTrue($route->legs()[0]->cargoBefore()->isEmpty());
+        self::assertSame(
+            ['Gold' => 6, 'Silver' => 4],
+            $this->cargoContents($route->legs()[0]->cargoAfterPurchase()),
+        );
+        self::assertSame(10, $route->legs()[0]->cargoAfterPurchase()->usedCapacity());
     }
 
     public function testActiveRouteSelectionShowsCurrentLegAndTheNextThreeStops(): void
