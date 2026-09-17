@@ -16,6 +16,10 @@ generated Secret. Create a DNS A/AAAA record for `trade-routes.rindula.de`
 pointing at the k3s ingress address before applying it, and register
 `https://trade-routes.rindula.de/auth/callback` in Authentik.
 
+The directory also contains `kustomization.yaml`, which renders only
+`ticket-9.yaml`. Configure Argo CD to use `deploy/kubernetes` as a Kustomize
+source; the legacy `ticket-2.yaml` is intentionally not included.
+
 ## Container image
 
 `.github/workflows/container.yml` builds the image on pull requests and pushes
