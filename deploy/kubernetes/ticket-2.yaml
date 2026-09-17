@@ -28,6 +28,8 @@ stringData:
   OIDC_AUTHORIZATION_ENDPOINT: https://authentik.example.com/application/o/authorize/
   OIDC_TOKEN_ENDPOINT: https://authentik.example.com/application/o/token/
   OIDC_USERINFO_ENDPOINT: https://authentik.example.com/application/o/userinfo/
+  OIDC_JWKS_ENDPOINT: https://authentik.example.com/application/o/.well-known/jwks.json
+  OIDC_ISSUER: https://authentik.example.com/application/o/ed-traderoutes/
   OIDC_CLIENT_ID: replace-me
   OIDC_CLIENT_SECRET: replace-me
 ---
@@ -189,12 +191,17 @@ spec:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: ed-traderoutes-migrations
+  name: ed-traderoutes-migrations-v1
   namespace: ed-traderoutes
 spec:
   backoffLimit: 3
   template:
     spec:
+      initContainers:
+        - name: wait-for-postgres
+          image: postgres:16-alpine
+          command: ["sh", "-c"]
+          args: ["until pg_isready -h postgres -U app -d app; do sleep 2; done"]
       restartPolicy: Never
       containers:
         - name: migrations
