@@ -2,11 +2,13 @@
 
 namespace App\Tests\Route;
 
+use App\Domain\Route\RouteCalculationRequest;
+use App\Domain\Route\RouteCalculator;
+use App\Domain\Route\RouteTimeEstimates;
+use App\Domain\Route\TradeRoute;
 use App\Entity\MarketObservation;
 use App\Entity\Station;
 use App\Entity\System;
-use App\Route\RoutePlanner;
-use App\Route\RoutePlanningRequest;
 use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 
@@ -29,18 +31,18 @@ final class RoutePlannerTest extends TestCase
             $this->market($achenarStation, 0, 250, 0, 100),
         ];
 
-        $route = $this->planner()->plan(
+        $route = $this->calculator()->calculateBest(
             $this->request($sol, cargoCapacity: 40, maxJumpDistance: 10.0),
-            [$sol, $achenar],
             [$solStation, $achenarStation],
             $observations,
         );
 
-        self::assertSame(['Sol', 'Achenar'], $route->getSystemNames());
-        self::assertSame('Gold', $route->getCurrentLeg()->getCommodityName());
-        self::assertSame(40, $route->getCurrentLeg()->getQuantity());
-        self::assertSame(6_000, $route->getExpectedProfit());
-        self::assertTrue($route->isExecutable());
+        self::assertInstanceOf(TradeRoute::class, $route);
+        self::assertSame('Sol', $route->sourceStation()->getSystem()->getName());
+        self::assertSame('Achenar', $route->destinationStation()->getSystem()->getName());
+        self::assertSame('Gold', $route->tradeOffer()->commodityName());
+        self::assertSame(40, $route->tradeOffer()->quantity());
+        self::assertSame(6_000, $route->netProfitCredits());
     }
 
     public function testItExcludesAPlanWhenOneHyperspaceJumpExceedsTheConfiguredDistance(): void
@@ -51,15 +53,13 @@ final class RoutePlannerTest extends TestCase
             $this->market($achenarStation, 0, 250, 0, 100),
         ];
 
-        $route = $this->planner()->plan(
+        $route = $this->calculator()->calculateBest(
             $this->request($sol, cargoCapacity: 40, maxJumpDistance: 10.0),
-            [$sol, $achenar],
             [$solStation, $achenarStation],
             $observations,
         );
 
-        self::assertFalse($route->hasRoute());
-        self::assertSame('no_executable_route', $route->getRejectionReason());
+        self::assertNull($route);
     }
 
     public function testItExcludesAnInaccessibleTargetSystem(): void
@@ -70,15 +70,13 @@ final class RoutePlannerTest extends TestCase
             $this->market($achenarStation, 0, 250, 0, 100),
         ];
 
-        $route = $this->planner()->plan(
+        $route = $this->calculator()->calculateBest(
             $this->request($sol, cargoCapacity: 40, maxJumpDistance: 10.0),
-            [$sol, $achenar],
             [$solStation, $achenarStation],
             $observations,
         );
 
-        self::assertFalse($route->hasRoute());
-        self::assertSame('no_executable_route', $route->getRejectionReason());
+        self::assertNull($route);
     }
 
     public function testItExcludesAStaleMarketObservation(): void
@@ -89,44 +87,41 @@ final class RoutePlannerTest extends TestCase
             $this->market($achenarStation, 0, 250, 0, 100),
         ];
 
-        $route = $this->planner()->plan(
+        $route = $this->calculator()->calculateBest(
             $this->request($sol, cargoCapacity: 40, maxJumpDistance: 10.0, maxAgeSeconds: 7200),
-            [$sol, $achenar],
             [$solStation, $achenarStation],
             $observations,
         );
 
-        self::assertFalse($route->hasRoute());
-        self::assertSame('no_executable_route', $route->getRejectionReason());
+        self::assertNull($route);
     }
 
     /**
-     * Unknown or insufficient supply/demand must not be treated as unlimited.
-     * The two cases are kept in one test because both are the same eligibility
-     * invariant at the route boundary.
+     * Unknown or zero supply/demand must not be treated as unlimited. The two
+     * cases are kept in one test because both are the same eligibility
+     * invariant at the route boundary; positive values below ship capacity are
+     * valid partial quantities and are covered by the cargo-capacity test.
      */
     public function testItExcludesTradesWithInsufficientSupplyOrDemand(): void
     {
         [$sol, $solStation, $achenar, $achenarStation] = $this->stations();
-        $supplyTooSmall = [
-            $this->market($solStation, 100, 0, 10, 0),
+        $supplyUnavailable = [
+            $this->market($solStation, 100, 0, 0, 0),
             $this->market($achenarStation, 0, 250, 0, 100),
         ];
-        $demandTooSmall = [
+        $demandUnavailable = [
             $this->market($solStation, 100, 0, 100, 0),
-            $this->market($achenarStation, 0, 250, 0, 10),
+            $this->market($achenarStation, 0, 250, 0, 0),
         ];
 
-        foreach ([$supplyTooSmall, $demandTooSmall] as $observations) {
-            $route = $this->planner()->plan(
+        foreach ([$supplyUnavailable, $demandUnavailable] as $observations) {
+            $route = $this->calculator()->calculateBest(
                 $this->request($sol, cargoCapacity: 40, maxJumpDistance: 10.0),
-                [$sol, $achenar],
                 [$solStation, $achenarStation],
                 $observations,
             );
 
-            self::assertFalse($route->hasRoute());
-            self::assertSame('no_executable_route', $route->getRejectionReason());
+            self::assertNull($route);
         }
     }
 
@@ -138,16 +133,15 @@ final class RoutePlannerTest extends TestCase
             $this->market($achenarStation, 0, 250, 0, 100),
         ];
 
-        $route = $this->planner()->plan(
+        $route = $this->calculator()->calculateBest(
             $this->request($sol, cargoCapacity: 25, maxJumpDistance: 10.0),
-            [$sol, $achenar],
             [$solStation, $achenarStation],
             $observations,
         );
 
-        self::assertSame(25, $route->getCurrentLeg()->getQuantity());
-        self::assertSame(25, $route->getCargoPlan()->getTotalQuantity());
-        self::assertSame(3_750, $route->getExpectedProfit());
+        self::assertInstanceOf(TradeRoute::class, $route);
+        self::assertSame(25, $route->tradeOffer()->quantity());
+        self::assertSame(3_750, $route->netProfitCredits());
     }
 
     public function testItRanksByCreditsPerHourAndExposesTheTimeEstimate(): void
@@ -159,30 +153,31 @@ final class RoutePlannerTest extends TestCase
             $this->market($laveStation, 0, 150, 0, 100),
         ];
 
-        $route = $this->planner()->plan(
+        $route = $this->calculator()->calculateBest(
             $this->request(
                 $sol,
                 cargoCapacity: 40,
                 maxJumpDistance: 10.0,
-                averageSecondsPerJump: 60,
-                stationSeconds: 120,
-                maxStops: 1,
+                timeEstimates: new RouteTimeEstimates(
+                    secondsPerJump: 60,
+                    secondsPerTrade: 30,
+                    defaultStationSeconds: 120,
+                ),
             ),
-            [$sol, $achenar, $lave],
             [$solStation, $achenarStation, $laveStation],
             $observations,
         );
 
-        self::assertSame('Achenar', $route->getCurrentLeg()->getDestinationSystemName());
-        self::assertSame(4_000, $route->getExpectedProfit());
-        self::assertSame(240, $route->getEstimatedDurationSeconds());
-        self::assertSame(60_000, $route->getCreditsPerHour());
-        self::assertSame('credits_per_hour', $route->getRankingMetric());
+        self::assertInstanceOf(TradeRoute::class, $route);
+        self::assertSame('Achenar', $route->destinationStation()->getSystem()->getName());
+        self::assertSame(4_000, $route->netProfitCredits());
+        self::assertSame(330.0, $route->estimatedDurationSeconds());
+        self::assertEqualsWithDelta(43_636.3636, $route->creditsPerHour(), 0.0001);
     }
 
-    private function planner(): RoutePlanner
+    private function calculator(): RouteCalculator
     {
-        return new RoutePlanner();
+        return new RouteCalculator();
     }
 
     private function request(
@@ -190,20 +185,16 @@ final class RoutePlannerTest extends TestCase
         int $cargoCapacity,
         float $maxJumpDistance,
         int $maxAgeSeconds = 7200,
-        int $averageSecondsPerJump = 60,
-        int $stationSeconds = 120,
-        int $maxStops = 1,
-    ): RoutePlanningRequest {
-        return new RoutePlanningRequest(
-            startSystem: $startSystem,
-            cargoCapacity: $cargoCapacity,
+        ?RouteTimeEstimates $timeEstimates = null,
+    ): RouteCalculationRequest {
+        return new RouteCalculationRequest(
+            originSystem: $startSystem,
+            shipJumpRange: 10.0,
             maxJumpDistance: $maxJumpDistance,
-            maxJumps: 4,
-            maxStops: $maxStops,
-            maxAgeSeconds: $maxAgeSeconds,
-            calculatedAt: new DateTimeImmutable(self::CALCULATED_AT),
-            averageSecondsPerJump: $averageSecondsPerJump,
-            stationSeconds: $stationSeconds,
+            cargoCapacity: $cargoCapacity,
+            asOf: new DateTimeImmutable(self::CALCULATED_AT),
+            maxDataAgeSeconds: $maxAgeSeconds,
+            timeEstimates: $timeEstimates,
         );
     }
 
