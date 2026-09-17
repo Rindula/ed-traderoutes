@@ -10,23 +10,6 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-interface BackupProcessRunnerInterface
-{
-    /** @param list<string> $command */
-    public function run(array $command, OutputInterface $output): int;
-}
-
-interface BackupFileStoreInterface
-{
-    public function ensureDirectory(string $directory): void;
-
-    public function move(string $source, string $destination): void;
-
-    public function remove(string $path): void;
-
-    public function isNonEmptyFile(string $path): bool;
-}
-
 final class ShellBackupProcessRunner implements BackupProcessRunnerInterface
 {
     public function run(array $command, OutputInterface $output): int
