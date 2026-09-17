@@ -10,9 +10,6 @@ metadata:
   namespace: ed-traderoutes
 data:
   APP_ENV: prod
-  DATABASE_URL: postgresql://app:change-me@postgres:5432/app?serverVersion=16&charset=utf8
-  REDIS_DSN: redis://:change-me@redis:6379
-  MESSENGER_TRANSPORT_DSN: redis://:change-me@redis:6379/messages
   OIDC_REDIRECT_URI: https://trade-routes.example.com/auth/callback
 ---
 apiVersion: v1
@@ -23,6 +20,11 @@ metadata:
 type: Opaque
 stringData:
   APP_SECRET: replace-me
+  DATABASE_URL: postgresql://app:replace-me@postgres:5432/app?serverVersion=16&charset=utf8
+  REDIS_DSN: redis://:replace-me@redis:6379
+  MESSENGER_TRANSPORT_DSN: redis://:replace-me@redis:6379/messages
+  POSTGRES_PASSWORD: replace-me
+  REDIS_PASSWORD: replace-me
   OIDC_AUTHORIZATION_ENDPOINT: https://authentik.example.com/application/o/authorize/
   OIDC_TOKEN_ENDPOINT: https://authentik.example.com/application/o/token/
   OIDC_USERINFO_ENDPOINT: https://authentik.example.com/application/o/userinfo/
@@ -57,6 +59,9 @@ spec:
             httpGet: { path: /health/live, port: http }
             initialDelaySeconds: 10
             periodSeconds: 20
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits: { cpu: 500m, memory: 512Mi }
 ---
 apiVersion: v1
 kind: Service
@@ -87,6 +92,19 @@ spec:
           envFrom:
             - configMapRef: { name: ed-traderoutes-config }
             - secretRef: { name: ed-traderoutes-secrets }
+          startupProbe:
+            exec: { command: ["php", "bin/console", "about"] }
+            failureThreshold: 30
+            periodSeconds: 10
+          readinessProbe:
+            exec: { command: ["php", "bin/console", "about"] }
+            periodSeconds: 30
+          livenessProbe:
+            exec: { command: ["sh", "-c", "kill -0 1"] }
+            periodSeconds: 20
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits: { cpu: 500m, memory: 512Mi }
 ---
 apiVersion: v1
 kind: Service
@@ -118,12 +136,14 @@ spec:
           env:
             - { name: POSTGRES_DB, value: app }
             - { name: POSTGRES_USER, value: app }
-            - { name: POSTGRES_PASSWORD, value: change-me }
+            - name: POSTGRES_PASSWORD
+              valueFrom: { secretKeyRef: { name: ed-traderoutes-secrets, key: POSTGRES_PASSWORD } }
           volumeMounts: [{ name: data, mountPath: /var/lib/postgresql/data }]
   volumeClaimTemplates:
     - metadata: { name: data }
       spec:
         accessModes: [ReadWriteOnce]
+        storageClassName: trade-routes-storage
         resources: { requests: { storage: 20Gi } }
 ---
 apiVersion: v1
@@ -152,11 +172,53 @@ spec:
       containers:
         - name: redis
           image: redis:7-alpine
-          command: ["redis-server", "--requirepass", "change-me", "--appendonly", "yes"]
+          command: ["sh", "-c"]
+          args: ["exec redis-server --requirepass \"$REDIS_PASSWORD\" --appendonly yes"]
           ports: [{ containerPort: 6379 }]
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom: { secretKeyRef: { name: ed-traderoutes-secrets, key: REDIS_PASSWORD } }
           volumeMounts: [{ name: data, mountPath: /data }]
   volumeClaimTemplates:
     - metadata: { name: data }
       spec:
         accessModes: [ReadWriteOnce]
+        storageClassName: trade-routes-storage
         resources: { requests: { storage: 5Gi } }
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ed-traderoutes-migrations
+  namespace: ed-traderoutes
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrations
+          image: ghcr.io/rindula/ed-traderoutes:latest
+          command: ["php", "bin/console", "doctrine:migrations:migrate", "--no-interaction"]
+          envFrom:
+            - configMapRef: { name: ed-traderoutes-config }
+            - secretRef: { name: ed-traderoutes-secrets }
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ed-traderoutes
+  namespace: ed-traderoutes
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts: [trade-routes.example.com]
+      secretName: trade-routes-tls
+  rules:
+    - host: trade-routes.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service: { name: ed-traderoutes-web, port: { number: 80 } }
