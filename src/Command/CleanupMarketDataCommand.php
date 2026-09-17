@@ -57,14 +57,14 @@ final class CleanupMarketDataCommand extends Command
         $dryRun = (bool) $input->getOption('dry-run');
         $normalizedCount = $this->store->cleanupNormalizedOlderThan($now->modify(sprintf('-%d days', $normalizedDays)), $dryRun);
         $rawCount = $this->store->cleanupRawEddnOlderThan($now->modify(sprintf('-%d hours', $rawHours)), $dryRun);
+        if ($rawCount === null) {
+            $output->writeln('<error>Raw EDDN cleanup failed: the raw EDDN retention store is not configured.</error>');
+            return Command::FAILURE;
+        }
 
         $prefix = $dryRun ? 'Would remove' : 'Removed';
         $output->writeln(sprintf('%s %d normalized market observation(s).', $prefix, $normalizedCount));
-        if ($rawCount === null) {
-            $output->writeln('Raw EDDN cleanup skipped: no supported raw EDDN table/entity is configured.');
-        } else {
-            $output->writeln(sprintf('%s %d raw EDDN message(s).', $prefix, $rawCount));
-        }
+        $output->writeln(sprintf('%s %d raw EDDN message(s).', $prefix, $rawCount));
 
         return Command::SUCCESS;
     }

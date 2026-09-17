@@ -40,16 +40,10 @@ final class DashboardController extends AbstractController
         }
 
         try {
-            $payload = $request->toArray();
+            $payload = $request->getContentTypeFormat() === 'json' ? $request->toArray() : $request->request->all();
             $identifier = $payload['routeIdentifier'] ?? null;
-            $legs = $payload['legs'] ?? null;
-            if (!is_string($identifier) || $identifier === '' || !is_array($legs) || !array_is_list($legs) || $legs === []) {
-                throw new \InvalidArgumentException('routeIdentifier and a non-empty ordered legs array are required.');
-            }
-            foreach ($legs as $leg) {
-                if (!is_array($leg)) {
-                    throw new \InvalidArgumentException('Every route leg must be an object.');
-                }
+            if (!is_string($identifier) || $identifier === '') {
+                throw new \InvalidArgumentException('routeIdentifier is required.');
             }
         } catch (\Throwable $exception) {
             return $this->json(['error' => 'invalid_alternative', 'message' => $exception->getMessage()], 422);
@@ -57,11 +51,18 @@ final class DashboardController extends AbstractController
 
         $active = $activeRoutes->findForUser($user);
         if (!$active instanceof ActiveRoute) {
-            $active = new ActiveRoute($user, $identifier, $legs);
-            $activeRoutes->save($active);
-            $selection = 'activated';
-        } elseif ($active->isCurrentLegBound()) {
-            $active->replaceFollowingLegs($legs);
+            return $this->json(['error' => 'alternative_not_found'], 404);
+        }
+        $alternative = array_values(array_filter(
+            $active->getAlternatives(),
+            static fn (array $candidate): bool => ($candidate['routeIdentifier'] ?? null) === $identifier,
+        ))[0] ?? null;
+        if (!is_array($alternative) || !isset($alternative['legs']) || !is_array($alternative['legs'])) {
+            return $this->json(['error' => 'alternative_not_found'], 404);
+        }
+        $legs = $alternative['legs'];
+        if ($active->isCurrentLegBound()) {
+            $active->replaceFollowingLegs(array_slice($legs, $active->getCurrentLegIndex() + 1));
             $selection = 'deferred';
         } else {
             $active->replaceRoute($identifier, $legs);

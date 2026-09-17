@@ -39,6 +39,10 @@ final class ActiveRoute
     #[ORM\Column(type: 'json')]
     private array $legs;
 
+    /** @var list<array<string, mixed>> */
+    #[ORM\Column(type: 'json')]
+    private array $alternatives = [];
+
     #[ORM\Column(name: 'current_leg_index', type: 'integer')]
     private int $currentLegIndex;
 
@@ -128,6 +132,16 @@ final class ActiveRoute
         return $this->updatedAt;
     }
 
+    /** @return list<array<string, mixed>> */
+    public function getAlternatives(): array { return $this->alternatives; }
+
+    /** @param list<array<string, mixed>> $alternatives */
+    public function setAlternatives(array $alternatives): void
+    {
+        $this->alternatives = array_values(array_filter($alternatives, 'is_array'));
+        $this->touch(null);
+    }
+
     /**
      * Replace the selected route while no cargo commitment exists.
      *
@@ -150,6 +164,7 @@ final class ActiveRoute
 
         $this->routeIdentifier = $routeIdentifier;
         $this->legs = self::normalizeLegs($legs);
+        $this->alternatives = [];
         $this->currentLegIndex = 0;
         $this->boundAt = null;
         $this->touch($updatedAt);
@@ -170,6 +185,7 @@ final class ActiveRoute
         $followingLegs = self::normalizeLegs($followingLegs, allowEmpty: true);
         $prefix = array_slice($this->legs, 0, $this->currentLegIndex + 1);
         $this->legs = [...$prefix, ...$followingLegs];
+        $this->alternatives = [];
         $this->touch($updatedAt);
     }
 

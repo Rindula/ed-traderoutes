@@ -18,14 +18,14 @@ final class KubernetesManifestTest extends TestCase
         return array_map(static fn (string $document): array => Yaml::parse($document), $documents);
     }
 
-    public function testManifestHasExplicitApplicationStorageAndDedicatedSmbBackup(): void
+    public function testManifestUsesClusterStorageAndDedicatedSmbBackup(): void
     {
         $documents = $this->documents();
         $statefulSets = array_values(array_filter($documents, static fn (array $doc): bool => $doc['kind'] === 'StatefulSet'));
 
         self::assertCount(2, $statefulSets);
         foreach ($statefulSets as $statefulSet) {
-            self::assertNotEmpty($statefulSet['spec']['volumeClaimTemplates'][0]['spec']['storageClassName']);
+            self::assertArrayNotHasKey('storageClassName', $statefulSet['spec']['volumeClaimTemplates'][0]['spec']);
         }
 
         $backup = $this->find('CronJob', 'ed-traderoutes-postgres-backup', $documents);
@@ -52,6 +52,17 @@ final class KubernetesManifestTest extends TestCase
 
         $manual = $this->find('Job', 'ed-traderoutes-catalog-manual', $documents);
         self::assertTrue($manual['spec']['suspend']);
+    }
+
+    public function testIngressUsesK3sTraefikAndLetsEncrypt(): void
+    {
+        $ingress = $this->find('Ingress', 'ed-traderoutes', $this->documents());
+
+        self::assertSame('traefik', $ingress['spec']['ingressClassName']);
+        self::assertSame('letsencrypt-prod', $ingress['metadata']['annotations']['cert-manager.io/cluster-issuer']);
+        self::assertSame('trade-routes.rindula.de', $ingress['spec']['rules'][0]['host']);
+        self::assertSame('trade-routes.rindula.de', $ingress['spec']['tls'][0]['hosts'][0]);
+        self::assertSame('trade-routes-tls', $ingress['spec']['tls'][0]['secretName']);
     }
 
     /** @param list<array<string, mixed>> $documents */

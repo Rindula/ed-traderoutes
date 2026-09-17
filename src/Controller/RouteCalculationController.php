@@ -67,6 +67,8 @@ final class RouteCalculationController extends AbstractController
                 'maxDataAgeSeconds' => isset($payload['maxDataAgeSeconds']) ? $this->integer($payload, 'maxDataAgeSeconds') : RouteCalculationRequest::DEFAULT_MAX_DATA_AGE_SECONDS,
                 'landingClassFilter' => isset($payload['landingClass']) && is_string($payload['landingClass']) ? $payload['landingClass'] : null,
                 'allowedStationTypes' => array_values($allowedTypes),
+                'illegalCommodities' => $this->stringList($payload['illegalCommodities'] ?? []),
+                'allowIllegalCommodities' => (bool) ($payload['allowIllegalCommodities'] ?? false),
                 'timeEstimates' => new RouteTimeEstimates(
                     secondsPerJump: isset($payload['secondsPerJump']) ? $this->number($payload, 'secondsPerJump') : 45.0,
                     secondsPerTrade: isset($payload['secondsPerTrade']) ? $this->number($payload, 'secondsPerTrade') : 30.0,
@@ -82,6 +84,8 @@ final class RouteCalculationController extends AbstractController
                         ? $this->integer($payload, 'maxTradeStops')
                         : (isset($payload['maxStops']) ? $this->integer($payload, 'maxStops') : 3),
                     returnToStart: $this->returnToStart($payload),
+                    illegalCommodities: $common['illegalCommodities'],
+                    allowIllegalCommodities: $common['allowIllegalCommodities'],
                 )
                 : new RouteCalculationRequest(...$common);
         } catch (\Throwable $exception) {
@@ -92,14 +96,25 @@ final class RouteCalculationController extends AbstractController
         $observations = $this->observations->findAll();
         $isMultiLeg = $requestData instanceof MultiStopRouteCalculationRequest;
         $multiLegCalculator = $this->multiLegCalculator ?? new MultiStopRouteCalculator();
-        $route = $isMultiLeg
-            ? $multiLegCalculator->calculateBest($requestData, $markets, $observations)
-            : $calculator->calculateBest($requestData, $markets, $observations);
+        $candidates = $isMultiLeg
+            ? $multiLegCalculator->calculateCandidates($requestData->routeRequest(), $markets, $observations)
+            : $calculator->calculateCandidates($requestData, $markets, $observations);
+        $route = $candidates[0] ?? null;
         if ($route === null) {
             return $this->json(['route' => null, 'message' => 'No executable trade found.'], 404);
         }
 
         $firstLeg = $isMultiLeg ? $route->legs()[0]->tradeRoute() : $route;
+        $serializedRoute = $isMultiLeg ? $this->serializeMultiLegRoute($route, $multiLegCalculator) : $this->serializeSingleLegRoute($route);
+        $serializedAlternatives = array_map(function (MultiLegRoute|TradeRoute $candidate) use ($isMultiLeg, $multiLegCalculator): array {
+            $candidateRoute = $isMultiLeg ? $this->serializeMultiLegRoute($candidate, $multiLegCalculator) : $this->serializeSingleLegRoute($candidate);
+            return [
+                'routeIdentifier' => $this->routeIdentifier($candidate),
+                'legs' => $candidateRoute['legs'] ?? [$candidateRoute],
+                'profitCredits' => $candidateRoute['profitCredits'],
+                'creditsPerHour' => $candidateRoute['creditsPerHour'],
+            ];
+        }, array_slice($candidates, 1, 5));
         $snapshot = new RouteSnapshot(
             user: $user,
             routeIdentifier: $this->routeIdentifier($route),
@@ -119,10 +134,13 @@ final class RouteCalculationController extends AbstractController
             $this->activeRoutes->save($activeRoute);
         } elseif (!$activeRoute->isCurrentLegBound()) {
             $activeRoute->replaceRoute($this->routeIdentifier($route), $activeLegs);
+        } else {
+            $activeRoute->replaceFollowingLegs(array_slice($activeLegs, $activeRoute->getCurrentLegIndex() + 1));
         }
+        $activeRoute->setAlternatives($serializedAlternatives);
         $this->entityManager->flush();
 
-        return $this->json(['route' => $isMultiLeg ? $this->serializeMultiLegRoute($route, $multiLegCalculator) : $this->serializeSingleLegRoute($route)]);
+        return $this->json(['route' => $serializedRoute, 'alternatives' => $serializedAlternatives]);
     }
 
     /** @param array<string, mixed> $payload */
@@ -208,6 +226,14 @@ final class RouteCalculationController extends AbstractController
     /** @return array<string, mixed> */
     private function serializeLeg(TradeRoute $route): array
     {
+        $offers = array_map(static fn ($offer): array => [
+            'commodity' => $offer->commodityName(),
+            'quantity' => $offer->quantity(),
+            'buyPrice' => $offer->buyPrice(),
+            'sellPrice' => $offer->sellPrice(),
+            'profitCredits' => $offer->totalProfitCredits(),
+        ], $route->tradeOffers());
+
         return [
             'legIdentifier' => $route->sourceStation()->getId().'->'.$route->destinationStation()->getId().':'.$route->tradeOffer()->commodityName(),
             'sourceSystem' => $route->sourceStation()->getSystem()->getName(),
@@ -216,6 +242,7 @@ final class RouteCalculationController extends AbstractController
             'destinationStation' => $route->destinationStation()->getName(),
             'commodity' => $route->tradeOffer()->commodityName(),
             'quantity' => $route->tradeOffer()->quantity(),
+            'offers' => $offers,
             'jumps' => $route->jumpCount(),
             'distance' => $route->systemDistance(),
             'profitCredits' => $route->netProfitCredits(),
@@ -252,5 +279,19 @@ final class RouteCalculationController extends AbstractController
         }
 
         return $value;
+    }
+
+    /** @return list<string> */
+    private function stringList(mixed $value): array
+    {
+        if (!is_array($value) || !array_is_list($value)) {
+            throw new \InvalidArgumentException('illegalCommodities must be an array.');
+        }
+        foreach ($value as $item) {
+            if (!is_string($item) || trim($item) === '') {
+                throw new \InvalidArgumentException('illegalCommodities must contain non-empty strings.');
+            }
+        }
+        return array_values($value);
     }
 }

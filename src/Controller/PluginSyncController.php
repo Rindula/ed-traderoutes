@@ -101,12 +101,14 @@ final class PluginSyncController extends AbstractController
         $this->entityManager->persist($event);
         $key->markActivity();
         $status = $this->statuses->findOrCreateForUser($user);
-        $status->receiveHeartbeat();
-        $lifecycleUncertain = $this->applyLifecycle($user, $event, $previous, $uncertain);
+        $automatic = $status->isAutomaticModeAt(new \DateTimeImmutable());
+        $lifecycleUncertain = $automatic
+            ? $this->applyLifecycle($user, $event, $previous, $uncertain)
+            : false;
         $this->entityManager->flush();
 
         return $this->json([
-            'status' => ($uncertain || $lifecycleUncertain) ? 'accepted_uncertain' : 'accepted',
+            'status' => !$automatic ? 'accepted_manual' : (($uncertain || $lifecycleUncertain) ? 'accepted_uncertain' : 'accepted'),
             'eventId' => $externalId,
             'activeRoute' => $this->activeRouteState($user),
         ], 202);

@@ -24,7 +24,17 @@
         <section class="panel"><div class="panel__heading"><h2>Ship & sync</h2></div><dl class="metrics">
             <div><dt>Cargo</dt><dd>{{ cargo.usedCapacity }} / {{ cargo.capacity }} t</dd></div><div><dt>Sync</dt><dd>{{ plugin.heartbeatFresh ? 'Fresh' : 'Stale' }}</dd></div><div><dt>Mode</dt><dd>{{ plugin.mode == 'active' ? 'Automatic' : 'Manual' }}</dd></div><div><dt>Safety</dt><dd>{{ cargo.uncertain ? 'Cargo uncertain' : 'Confirmed' }}</dd></div>
         </dl></section>
-        <section class="panel"><div class="panel__heading"><h2>Alternatives</h2></div><p class="muted">{{ dashboard.alternatives is empty ? 'No alternatives available.' : 'Select an alternative to activate it.' }}</p></section>
+        <section class="panel"><div class="panel__heading"><h2>Alternatives</h2></div>
+            {% if dashboard.alternatives is empty %}<p class="muted">No alternatives available.</p>{% else %}
+                <ul class="stops">{% for alternative in dashboard.alternatives %}<li>
+                    <span>{{ loop.index }}</span>{{ alternative.creditsPerHour|round|number_format(0, ',', '.') }} Cr/h
+                    <form method="post" action="{{ path('dashboard_select_alternative') }}" class="inline-form">
+                        <input type="hidden" name="routeIdentifier" value="{{ alternative.routeIdentifier }}">
+                        <button type="submit">Select</button>
+                    </form>
+                </li>{% endfor %}</ul>
+            {% endif %}
+        </section>
     </div>
     <p class="muted dashboard__updated">{{ dashboard.routeCalculatedAt ? 'Last route calculation: ' ~ dashboard.routeCalculatedAt : 'No calculation yet' }}</p>
 </div>

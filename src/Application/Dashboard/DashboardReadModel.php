@@ -40,7 +40,7 @@ final class DashboardReadModel
             'metrics' => $this->metrics($activeRoute),
             'plugin' => $this->plugin($plugin, $now),
             'cargo' => $this->cargo($cargo),
-            'alternatives' => [],
+            'alternatives' => $activeRoute?->getAlternatives() ?? [],
             'routeCalculatedAt' => $snapshot?->getCalculatedAt()->format(DATE_ATOM),
         ];
     }

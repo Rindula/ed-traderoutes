@@ -26,6 +26,8 @@ final readonly class MultiStopRouteCalculationRequest
         int $maxDataAgeSeconds = RouteCalculationRequest::DEFAULT_MAX_DATA_AGE_SECONDS,
         ?string $landingClassFilter = null,
         array $allowedStationTypes = [],
+        array $illegalCommodities = [],
+        bool $allowIllegalCommodities = false,
         ?RouteTimeEstimates $timeEstimates = null,
     ) {
         $this->legRequest = new RouteCalculationRequest(
@@ -37,6 +39,8 @@ final readonly class MultiStopRouteCalculationRequest
             maxDataAgeSeconds: $maxDataAgeSeconds,
             landingClassFilter: $landingClassFilter,
             allowedStationTypes: $allowedStationTypes,
+            illegalCommodities: $illegalCommodities,
+            allowIllegalCommodities: $allowIllegalCommodities,
             timeEstimates: $timeEstimates,
         );
         $this->routeRequest = new MultiLegRouteRequest($this->legRequest, $maxTotalJumps, $maxStops, $returnToStart);
