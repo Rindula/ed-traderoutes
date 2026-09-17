@@ -19,12 +19,12 @@ metadata:
   namespace: ed-traderoutes
 type: Opaque
 stringData:
-  APP_SECRET: replace-me
-  DATABASE_URL: postgresql://app:replace-me@postgres:5432/app?serverVersion=16&charset=utf8
-  REDIS_DSN: redis://:replace-me@redis:6379
-  MESSENGER_TRANSPORT_DSN: redis://:replace-me@redis:6379/messages
-  POSTGRES_PASSWORD: replace-me
-  REDIS_PASSWORD: replace-me
+  APP_SECRET: 1b6665bb5bd0552f2b6c306db88bc07dd6826055fa6aadfe06b0dd4367188308
+  DATABASE_URL: postgresql://app:de442bc092cd8890d9e00fde1487790e5bef975ff89733a12e511dd506328562@postgres:5432/app?serverVersion=16&charset=utf8
+  REDIS_DSN: redis://:7d35a00662c185cb325272df8b1e002e9fc0428557aad640204cdc174dce0a05@redis:6379
+  MESSENGER_TRANSPORT_DSN: redis://:7d35a00662c185cb325272df8b1e002e9fc0428557aad640204cdc174dce0a05@redis:6379/messages
+  POSTGRES_PASSWORD: de442bc092cd8890d9e00fde1487790e5bef975ff89733a12e511dd506328562
+  REDIS_PASSWORD: 7d35a00662c185cb325272df8b1e002e9fc0428557aad640204cdc174dce0a05
   OIDC_AUTHORIZATION_ENDPOINT: https://authentik.example.com/application/o/authorize/
   OIDC_TOKEN_ENDPOINT: https://authentik.example.com/application/o/token/
   OIDC_USERINFO_ENDPOINT: https://authentik.example.com/application/o/userinfo/

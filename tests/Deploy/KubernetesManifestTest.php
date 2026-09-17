@@ -18,7 +18,7 @@ final class KubernetesManifestTest extends TestCase
         return array_map(static fn (string $document): array => Yaml::parse($document), $documents);
     }
 
-    public function testManifestUsesClusterStorageAndDedicatedSmbBackup(): void
+    public function testManifestUsesClusterStorageWithoutBackupWorkloads(): void
     {
         $documents = $this->documents();
         $statefulSets = array_values(array_filter($documents, static fn (array $doc): bool => $doc['kind'] === 'StatefulSet'));
@@ -28,9 +28,14 @@ final class KubernetesManifestTest extends TestCase
             self::assertArrayNotHasKey('storageClassName', $statefulSet['spec']['volumeClaimTemplates'][0]['spec']);
         }
 
-        $backup = $this->find('CronJob', 'ed-traderoutes-postgres-backup', $documents);
-        $backupYaml = Yaml::dump($backup);
-        self::assertStringContainsString('smb-backup', $backupYaml);
+        self::assertNotContains('ed-traderoutes-postgres-backup', array_map(
+            static fn (array $document): string => $document['metadata']['name'] ?? '',
+            $documents,
+        ));
+        self::assertNotContains('ed-traderoutes-smb-backup', array_map(
+            static fn (array $document): string => $document['metadata']['name'] ?? '',
+            $documents,
+        ));
 
         foreach ($documents as $document) {
             if (in_array($document['kind'], ['Deployment', 'StatefulSet'], true)) {
@@ -42,7 +47,7 @@ final class KubernetesManifestTest extends TestCase
     public function testScheduledOperationsAreRetryableAndMonitored(): void
     {
         $documents = $this->documents();
-        foreach (['ed-traderoutes-catalog-weekly', 'ed-traderoutes-retention-cleanup', 'ed-traderoutes-postgres-backup'] as $name) {
+        foreach (['ed-traderoutes-catalog-weekly', 'ed-traderoutes-retention-cleanup'] as $name) {
             $cronJob = $this->find('CronJob', $name, $documents);
             self::assertSame('required', $cronJob['metadata']['labels']['monitoring']);
             self::assertSame('job-failed', $cronJob['metadata']['annotations']['monitoring.ed-traderoutes.io/failure-signal']);
