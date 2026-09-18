@@ -14,6 +14,7 @@ COPY --from=vendor /app/vendor ./vendor
 COPY . .
 ENV APP_ENV=prod APP_DEBUG=0
 RUN APP_SECRET=build-only-secret php bin/console importmap:install --env=prod \
+    && APP_SECRET=build-only-secret php bin/console asset-map:compile --env=prod \
     && APP_SECRET=build-only-secret php bin/console cache:clear --env=prod
 EXPOSE 8000
 CMD ["php", "-S", "0.0.0.0:8000", "-t", "public", "public/index.php"]
