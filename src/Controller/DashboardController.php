@@ -31,6 +31,12 @@ final class DashboardController extends AbstractController
         return $this->render('dashboard.html.twig');
     }
 
+    #[Route('/settings/api-keys', name: 'api_keys', methods: ['GET'])]
+    public function apiKeys(): Response
+    {
+        return $this->render('api_keys.html.twig');
+    }
+
     #[Route('/api/dashboard', name: 'dashboard_json', methods: ['GET'])]
     public function dashboardJson(): JsonResponse
     {

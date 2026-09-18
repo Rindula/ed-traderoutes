@@ -27,6 +27,7 @@ security:
         - { path: ^/api/routes/, roles: ROLE_USER }
         - { path: ^/api/dashboard, roles: ROLE_USER }
         - { path: ^/dashboard$, roles: ROLE_USER }
+        - { path: ^/settings/api-keys$, roles: ROLE_USER }
         - { path: ^/status$, roles: ROLE_USER }
 
 when@test:

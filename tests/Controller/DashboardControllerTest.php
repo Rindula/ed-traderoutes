@@ -21,4 +21,12 @@ final class DashboardControllerTest extends WebTestCase
 
         self::assertResponseRedirects('/login');
     }
+
+    public function testApiKeysPageRequiresAuthentication(): void
+    {
+        $client = static::createClient();
+        $client->request('GET', '/settings/api-keys');
+
+        self::assertResponseRedirects('/login');
+    }
 }
