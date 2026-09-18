@@ -30,10 +30,14 @@ jobs:
           PY
           python -m zipfile -t dist/ed-traderoutes-edmc-plugin.zip
 
+      - name: Determine calendar version
+        id: version
+        run: echo "version=$(date -u +%Y.%m.%d).${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v0.0.${{ github.run_number }}
-          name: ED Trade Routes v0.0.${{ github.run_number }}
+          tag_name: ${{ steps.version.outputs.version }}
+          name: ED Trade Routes ${{ steps.version.outputs.version }}
           generate_release_notes: true
           files: dist/ed-traderoutes-edmc-plugin.zip
