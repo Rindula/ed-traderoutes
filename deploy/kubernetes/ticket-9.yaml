@@ -349,7 +349,7 @@ metadata:
   namespace: ed-traderoutes
 spec:
   redirectRegex:
-    regex: ^https://trade-routes\\.rindula\\.de/$
+    regex: ^https://trade-routes\.rindula\.de/$
     replacement: https://trade-routes.rindula.de/dashboard
     permanent: false
 ---
