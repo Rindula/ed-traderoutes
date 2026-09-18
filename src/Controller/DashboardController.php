@@ -19,6 +19,12 @@ final class DashboardController extends AbstractController
     {
     }
 
+    #[Route('/', name: 'home', methods: ['GET'])]
+    public function home(): Response
+    {
+        return $this->redirectToRoute('dashboard');
+    }
+
     #[Route('/dashboard', name: 'dashboard', methods: ['GET'])]
     public function page(): Response
     {
