@@ -1,0 +1,37 @@
+<section {{ attributes }} class="panel api-keys" aria-labelledby="api-keys-title">
+    <div class="panel__heading">
+        <div>
+            <p class="eyebrow">EDMC CONNECTION</p>
+            <h2 id="api-keys-title">API keys</h2>
+        </div>
+        <button
+            type="button"
+            data-action="live#action"
+            data-live-action-param="createKey"
+            class="button"
+        >Generate key</button>
+    </div>
+
+    {% if this.newKeyToken %}
+        <div class="notice notice--success" role="status">
+            <strong>New key created — copy it now</strong>
+            <p>This secret is shown only after creation. It cannot be recovered later.</p>
+            <label>Key ID<input readonly value="{{ this.newKeyIdentifier }}"></label>
+            <label>Secret<input readonly value="{{ this.newKeyToken }}" onclick="this.select()"></label>
+        </div>
+    {% endif %}
+
+    {% if this.keys is empty %}
+        <p class="muted">No synchronization keys yet. Generate one for the EDMC plugin.</p>
+    {% else %}
+        <div class="key-list">
+            {% for key in this.keys %}
+                <div class="key-row">
+                    <code>{{ key.keyIdentifier }}</code>
+                    <span class="muted">created {{ key.createdAt|date('Y-m-d H:i') }}</span>
+                    {% if key.revokedAt %}<span class="status-pill status-pill--warning">Revoked</span>{% else %}<span class="status-pill">Active</span>{% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+</section>
