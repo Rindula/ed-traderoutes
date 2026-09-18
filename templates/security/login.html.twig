@@ -1,8 +1,9 @@
-{% extends 'base.html.twig' %}
-
-{% block title %}Anmeldung – ED Trade Routes{% endblock %}
-
-{% block stylesheets %}
+<!doctype html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Anmeldung – ED Trade Routes</title>
     <style>
         :root { color-scheme: dark; font-family: system-ui, sans-serif; }
         body { display: grid; min-height: 100vh; place-items: center; margin: 0; background: #111827; color: #f9fafb; }
@@ -11,9 +12,8 @@
         .error { margin: 1rem 0; padding: 1rem; border: 1px solid #f87171; border-radius: .5rem; background: #7f1d1d; color: #fee2e2; }
         a { display: inline-block; padding: .75rem 1rem; border-radius: .5rem; background: #2563eb; color: #fff; text-decoration: none; }
     </style>
-{% endblock %}
-
-{% block body %}
+</head>
+<body>
     <main>
         <h1>ED Trade Routes</h1>
         {% if error %}
@@ -23,4 +23,5 @@
         {% endif %}
         <a href="{{ path('login_start') }}">Mit Authentik anmelden</a>
     </main>
-{% endblock %}
+</body>
+</html>
