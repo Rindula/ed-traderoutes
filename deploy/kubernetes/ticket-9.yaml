@@ -74,7 +74,7 @@ spec:
     spec:
       containers:
         - name: web
-          image: ghcr.io/rindula/ed-traderoutes:latest@sha256:78122225300ee774aaa837f05ab7dee5e7b015b375038f79d0b1e94cc3941264
+          image: ghcr.io/rindula/ed-traderoutes:latest@sha256:2bdb12212807203d4f0d9e96346c8a7f8dc62f23575d740fd22054ba8f04a2fd
           ports: [{ name: http, containerPort: 8000 }]
           envFrom:
             - configMapRef: { name: ed-traderoutes-config }
@@ -117,7 +117,7 @@ spec:
     spec:
       containers:
         - name: worker
-          image: ghcr.io/rindula/ed-traderoutes:latest@sha256:78122225300ee774aaa837f05ab7dee5e7b015b375038f79d0b1e94cc3941264
+          image: ghcr.io/rindula/ed-traderoutes:latest@sha256:2bdb12212807203d4f0d9e96346c8a7f8dc62f23575d740fd22054ba8f04a2fd
           command: ["php", "bin/console", "messenger:consume", "async", "--time-limit=3600"]
           envFrom:
             - configMapRef: { name: ed-traderoutes-config }
@@ -250,7 +250,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: migrations
-          image: ghcr.io/rindula/ed-traderoutes:latest@sha256:78122225300ee774aaa837f05ab7dee5e7b015b375038f79d0b1e94cc3941264
+          image: ghcr.io/rindula/ed-traderoutes:latest@sha256:2bdb12212807203d4f0d9e96346c8a7f8dc62f23575d740fd22054ba8f04a2fd
           command: ["php", "bin/console", "doctrine:migrations:migrate", "--no-interaction"]
           envFrom:
             - configMapRef: { name: ed-traderoutes-config }
@@ -281,7 +281,7 @@ spec:
           restartPolicy: OnFailure
           containers:
             - name: catalog-refresh
-              image: ghcr.io/rindula/ed-traderoutes:latest@sha256:78122225300ee774aaa837f05ab7dee5e7b015b375038f79d0b1e94cc3941264
+              image: ghcr.io/rindula/ed-traderoutes:latest@sha256:2bdb12212807203d4f0d9e96346c8a7f8dc62f23575d740fd22054ba8f04a2fd
               command: ["sh", "-c"]
               args: ["exec php bin/console \"$CATALOG_REFRESH_COMMAND\" --no-interaction"]
               envFrom:
@@ -307,7 +307,7 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: catalog-refresh
-          image: ghcr.io/rindula/ed-traderoutes:latest@sha256:78122225300ee774aaa837f05ab7dee5e7b015b375038f79d0b1e94cc3941264
+          image: ghcr.io/rindula/ed-traderoutes:latest@sha256:2bdb12212807203d4f0d9e96346c8a7f8dc62f23575d740fd22054ba8f04a2fd
           command: ["sh", "-c"]
           args: ["exec php bin/console \"$CATALOG_REFRESH_COMMAND\" --no-interaction"]
           envFrom:
@@ -339,7 +339,7 @@ spec:
           restartPolicy: OnFailure
           containers:
             - name: retention-cleanup
-              image: ghcr.io/rindula/ed-traderoutes:latest@sha256:78122225300ee774aaa837f05ab7dee5e7b015b375038f79d0b1e94cc3941264
+              image: ghcr.io/rindula/ed-traderoutes:latest@sha256:2bdb12212807203d4f0d9e96346c8a7f8dc62f23575d740fd22054ba8f04a2fd
               command: ["sh", "-c"]
               args: ["exec php bin/console \"$RETENTION_CLEANUP_COMMAND\" --normalized-retention-days=\"$RETENTION_MARKET_DAYS\" --raw-retention-hours=\"$RETENTION_RAW_EVENT_HOURS\" --no-interaction"]
               envFrom:
