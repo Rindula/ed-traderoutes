@@ -42,7 +42,7 @@ final class OidcAuthenticator extends AbstractAuthenticator implements Authentic
         return new SelfValidatingPassport(new UserBadge($subject, fn (): object => $this->users->findOrCreateFromOidc($subject, $email, $name)));
     }
 
-    public function onAuthenticationSuccess(Request $request, TokenInterface $token, string $firewallName): ?Response { return new RedirectResponse('/status'); }
+    public function onAuthenticationSuccess(Request $request, TokenInterface $token, string $firewallName): ?Response { return new RedirectResponse('/dashboard'); }
     public function onAuthenticationFailure(Request $request, AuthenticationException $exception): ?Response
     {
         $reference = bin2hex(random_bytes(8));
