@@ -13,6 +13,7 @@ use Symfony\Component\Security\Http\Authenticator\Passport\Badge\UserBadge;
 use Symfony\Component\Security\Http\Authenticator\Passport\Passport;
 use Symfony\Component\Security\Http\Authenticator\Passport\SelfValidatingPassport;
 use Symfony\Component\Security\Http\EntryPoint\AuthenticationEntryPointInterface;
+use Psr\Log\LoggerInterface;
 use Twig\Environment;
 
 final class OidcAuthenticator extends AbstractAuthenticator implements AuthenticationEntryPointInterface
@@ -21,6 +22,7 @@ final class OidcAuthenticator extends AbstractAuthenticator implements Authentic
         private readonly OidcClient $oidcClient,
         private readonly UserRepository $users,
         private readonly Environment $twig,
+        private readonly LoggerInterface $logger,
     ) {}
     public function supports(Request $request): ?bool { return $request->attributes->get('_route') === 'oidc_callback'; }
 
@@ -43,9 +45,15 @@ final class OidcAuthenticator extends AbstractAuthenticator implements Authentic
     public function onAuthenticationSuccess(Request $request, TokenInterface $token, string $firewallName): ?Response { return new RedirectResponse('/status'); }
     public function onAuthenticationFailure(Request $request, AuthenticationException $exception): ?Response
     {
+        $reference = bin2hex(random_bytes(8));
+        $this->logger->error('OIDC authentication failed.', [
+            'reference' => $reference,
+            'exception' => $exception,
+        ]);
+
         return new Response(
             $this->twig->render('security/login.html.twig', [
-                'error' => 'Die Anmeldung über Authentik ist fehlgeschlagen. Bitte versuche es erneut.',
+                'error' => sprintf('Die Anmeldung über Authentik ist fehlgeschlagen. Bitte versuche es erneut. (Referenz: %s)', $reference),
             ]),
             Response::HTTP_UNAUTHORIZED,
             ['Cache-Control' => 'no-store'],
