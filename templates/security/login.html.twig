@@ -1,0 +1,26 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Anmeldung – ED Trade Routes{% endblock %}
+
+{% block stylesheets %}
+    <style>
+        :root { color-scheme: dark; font-family: system-ui, sans-serif; }
+        body { display: grid; min-height: 100vh; place-items: center; margin: 0; background: #111827; color: #f9fafb; }
+        main { width: min(32rem, calc(100% - 2rem)); padding: 2rem; border: 1px solid #374151; border-radius: 1rem; background: #1f2937; box-shadow: 0 1rem 3rem #0004; }
+        h1 { margin-top: 0; }
+        .error { margin: 1rem 0; padding: 1rem; border: 1px solid #f87171; border-radius: .5rem; background: #7f1d1d; color: #fee2e2; }
+        a { display: inline-block; padding: .75rem 1rem; border-radius: .5rem; background: #2563eb; color: #fff; text-decoration: none; }
+    </style>
+{% endblock %}
+
+{% block body %}
+    <main>
+        <h1>ED Trade Routes</h1>
+        {% if error %}
+            <p class="error" role="alert">{{ error }}</p>
+        {% else %}
+            <p>Bitte melde dich über Authentik an.</p>
+        {% endif %}
+        <a href="{{ path('login_start') }}">Mit Authentik anmelden</a>
+    </main>
+{% endblock %}
