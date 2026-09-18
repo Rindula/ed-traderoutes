@@ -28,6 +28,7 @@ _logger = logging.getLogger("EDTradeRoutes")
 _stop_event = threading.Event()
 _worker: threading.Thread | None = None
 _client: "ApiClient | None" = None
+_prefs_state: dict[str, Any] | None = None
 
 
 def plugin_start3(plugin_dir: str) -> str:
@@ -72,30 +73,43 @@ def plugin_prefs(parent: Any, cmdr: str | None, is_beta: bool) -> Any:
     """Provide EDMC preferences for the server and personal synchronization key."""
     try:
         import tkinter as tk
-        from tkinter import ttk
+        import myNotebook as nb
     except ImportError:
         return None
     if _client is None:
         return None
-    frame = ttk.Frame(parent)
+    global _prefs_state
+    frame = nb.Frame(parent)
     values = _client._config
     base_url = tk.StringVar(value=str(values.get("base_url", "")))
     key_id = tk.StringVar(value=str(values.get("key_id", "")))
     key = tk.StringVar(value=str(values.get("key", "")))
+    _prefs_state = {"base_url": base_url, "key_id": key_id, "key": key}
     for row, label, variable, show in (
         (0, "Server URL", base_url, None),
         (1, "Sync key ID", key_id, None),
         (2, "Sync key", key, "*"),
     ):
-        ttk.Label(frame, text=label).grid(row=row, column=0, sticky="w")
-        ttk.Entry(frame, textvariable=variable, show=show or "").grid(row=row, column=1, sticky="ew")
+        nb.Label(frame, text=label).grid(row=row, column=0, sticky="w")
+        nb.Entry(frame, textvariable=variable, show=show or "").grid(row=row, column=1, sticky="ew")
     frame.columnconfigure(1, weight=1)
 
     def save() -> None:
         _client.update_config(base_url.get().strip(), key_id.get().strip(), key.get())
 
-    ttk.Button(frame, text="Save", command=save).grid(row=3, column=1, sticky="e")
+    nb.Button(frame, text="Save", command=save).grid(row=3, column=1, sticky="e")
     return frame
+
+
+def prefs_changed(cmdr: str | None, is_beta: bool) -> None:
+    """Persist values when EDMC closes its settings dialog."""
+    if _client is None or _prefs_state is None:
+        return
+    _client.update_config(
+        _prefs_state["base_url"].get().strip(),
+        _prefs_state["key_id"].get().strip(),
+        _prefs_state["key"].get(),
+    )
 
 
 def _heartbeat_loop() -> None:
