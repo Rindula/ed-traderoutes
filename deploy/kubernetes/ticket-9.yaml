@@ -236,7 +236,7 @@ spec:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: ed-traderoutes-migrations-v1
+  name: ed-traderoutes-migrations-v2
   namespace: ed-traderoutes
 spec:
   backoffLimit: 3
@@ -292,7 +292,7 @@ spec:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: ed-traderoutes-catalog-manual
+  name: ed-traderoutes-catalog-manual-v2
   namespace: ed-traderoutes
   labels: { monitoring: required, workload: catalog, run: manual }
 spec:
