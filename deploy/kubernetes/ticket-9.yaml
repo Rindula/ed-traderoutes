@@ -360,7 +360,7 @@ metadata:
   namespace: ed-traderoutes
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
-    traefik.ingress.kubernetes.io/router.middlewares: ed-traderoutes-root-redirect@kubernetescrd
+    traefik.ingress.kubernetes.io/router.middlewares: ed-traderoutes-ed-traderoutes-root-redirect@kubernetescrd
 spec:
   ingressClassName: traefik
   tls:
