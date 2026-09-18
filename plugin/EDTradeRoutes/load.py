@@ -18,6 +18,8 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
+import updater
+
 
 PLUGIN_NAME = "ED Trade Routes"
 DEFAULT_HEARTBEAT_SECONDS = 60
@@ -27,19 +29,27 @@ REQUEST_TIMEOUT_SECONDS = 10
 _logger = logging.getLogger("EDTradeRoutes")
 _stop_event = threading.Event()
 _worker: threading.Thread | None = None
+_update_worker: threading.Thread | None = None
 _client: "ApiClient | None" = None
 _prefs_state: dict[str, Any] | None = None
 
 
 def plugin_start3(plugin_dir: str) -> str:
     """EDMC entry point called when the plugin is loaded."""
-    global _client, _worker
+    global _client, _worker, _update_worker
     data_dir = Path(plugin_dir) / "data"
     data_dir.mkdir(parents=True, exist_ok=True)
     _client = ApiClient(data_dir)
     _stop_event.clear()
     _worker = threading.Thread(target=_heartbeat_loop, name="ed-trade-routes-heartbeat", daemon=True)
     _worker.start()
+    _update_worker = threading.Thread(
+        target=_update_plugin,
+        args=(Path(plugin_dir),),
+        name="ed-trade-routes-updater",
+        daemon=True,
+    )
+    _update_worker.start()
     return PLUGIN_NAME
 
 
@@ -66,6 +76,7 @@ def plugin_app(parent: Any) -> Any:
     frame = ttk.Frame(parent)
     ttk.Label(frame, text=PLUGIN_NAME).grid(row=0, column=0, sticky="w")
     ttk.Label(frame, text="Events are synchronized in the background.").grid(row=1, column=0, sticky="w")
+    ttk.Label(frame, text="Updates are checked automatically when EDMC starts.").grid(row=2, column=0, sticky="w")
     return frame
 
 
@@ -110,6 +121,13 @@ def prefs_changed(cmdr: str | None, is_beta: bool) -> None:
         _prefs_state["key_id"].get().strip(),
         _prefs_state["key"].get(),
     )
+
+
+def _update_plugin(plugin_dir: Path) -> None:
+    try:
+        updater.update_if_available(plugin_dir)
+    except Exception:
+        _logger.exception("Automatic plugin update failed")
 
 
 def _heartbeat_loop() -> None:

@@ -15,6 +15,10 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v4
 
+      - name: Determine calendar version
+        id: version
+        run: echo "version=$(date -u +%Y.%m.%d).${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+
       - name: Build EDMC plugin archive
         run: |
           mkdir -p dist
@@ -27,12 +31,10 @@ jobs:
               for path in source.rglob("*"):
                   if path.is_file():
                       archive.write(path, path.relative_to("plugin").as_posix())
+              archive.writestr("EDTradeRoutes/VERSION", "${{ steps.version.outputs.version }}\n")
           PY
           python -m zipfile -t dist/ed-traderoutes-edmc-plugin.zip
-
-      - name: Determine calendar version
-        id: version
-        run: echo "version=$(date -u +%Y.%m.%d).${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+          sha256sum dist/ed-traderoutes-edmc-plugin.zip > dist/ed-traderoutes-edmc-plugin.zip.sha256
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
@@ -40,4 +42,6 @@ jobs:
           tag_name: ${{ steps.version.outputs.version }}
           name: ED Trade Routes ${{ steps.version.outputs.version }}
           generate_release_notes: true
-          files: dist/ed-traderoutes-edmc-plugin.zip
+          files: |
+            dist/ed-traderoutes-edmc-plugin.zip
+            dist/ed-traderoutes-edmc-plugin.zip.sha256
