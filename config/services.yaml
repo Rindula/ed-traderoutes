@@ -49,5 +49,11 @@ services:
             - '@redis.session.client'
             - { prefix: 'edtraderoutes_session_', ttl: 86400 }
 
+    App\Infrastructure\CatalogImporter: '@App\Infrastructure\EdsmCatalogImporter'
+    Symfony\Contracts\HttpClient\HttpClientInterface: '@App\Infrastructure\EdsmCatalogHttpClient'
+    App\Infrastructure\EdsmCatalogHttpClient:
+        class: Symfony\Contracts\HttpClient\HttpClientInterface
+        factory: ['Symfony\Component\HttpClient\HttpClient', 'create']
+
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
