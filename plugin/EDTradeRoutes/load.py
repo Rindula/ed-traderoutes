@@ -96,6 +96,7 @@ def plugin_prefs(parent: Any, cmdr: str | None, is_beta: bool) -> Any:
     """Provide EDMC preferences for the server and personal synchronization key."""
     try:
         import tkinter as tk
+        from tkinter import ttk
         import myNotebook as nb
     except ImportError:
         return None
@@ -114,13 +115,13 @@ def plugin_prefs(parent: Any, cmdr: str | None, is_beta: bool) -> Any:
         (2, "Sync key", key, "*"),
     ):
         nb.Label(frame, text=label).grid(row=row, column=0, sticky="w")
-        nb.Entry(frame, textvariable=variable, show=show or "").grid(row=row, column=1, sticky="ew")
+        ttk.Entry(frame, textvariable=variable, show=show or "").grid(row=row, column=1, sticky="ew")
     frame.columnconfigure(1, weight=1)
 
     def save() -> None:
         _client.update_config(base_url.get().strip(), key_id.get().strip(), key.get())
 
-    nb.Button(frame, text="Save", command=save).grid(row=3, column=1, sticky="e")
+    ttk.Button(frame, text="Save", command=save).grid(row=3, column=1, sticky="e")
     return frame
 
 
