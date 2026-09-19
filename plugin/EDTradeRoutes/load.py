@@ -7,10 +7,12 @@ journal events are not lost during short network outages.
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 import logging
 import os
 import queue
+import sys
 import threading
 import time
 import urllib.error
@@ -18,7 +20,17 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
-import updater
+try:
+    import updater
+except ImportError:
+    _updater_spec = importlib.util.spec_from_file_location(
+        "ed_trade_routes_updater", Path(__file__).with_name("updater.py")
+    )
+    if _updater_spec is None or _updater_spec.loader is None:
+        raise
+    updater = importlib.util.module_from_spec(_updater_spec)
+    sys.modules[_updater_spec.name] = updater
+    _updater_spec.loader.exec_module(updater)
 
 
 PLUGIN_NAME = "ED Trade Routes"
