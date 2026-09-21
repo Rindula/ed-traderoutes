@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "4d0d67b166e9827ad38414f4bad43825",
+    "content-hash": "b18a8e31287bf85b0fe4fee1508dffb6",
     "packages": [
         {
             "name": "composer/semver",
@@ -6789,16 +6789,16 @@
         },
         {
             "name": "symfony/ux-live-component",
-            "version": "v3.4.0",
+            "version": "v3.5.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/ux-live-component.git",
-                "reference": "bb7a955e68dbedbbd4c24ab0b6acab1ca22d8720"
+                "reference": "4570565b1199df6201d3edf5db5149e6c1afee80"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/ux-live-component/zipball/bb7a955e68dbedbbd4c24ab0b6acab1ca22d8720",
-                "reference": "bb7a955e68dbedbbd4c24ab0b6acab1ca22d8720",
+                "url": "https://api.github.com/repos/symfony/ux-live-component/zipball/4570565b1199df6201d3edf5db5149e6c1afee80",
+                "reference": "4570565b1199df6201d3edf5db5149e6c1afee80",
                 "shasum": ""
             },
             "require": {
@@ -6809,7 +6809,7 @@
                 "symfony/stimulus-bundle": "^2.9|^3.0",
                 "symfony/type-info": "^7.4|^8.0",
                 "symfony/ux-twig-component": "^2.33.0|^3.0",
-                "twig/twig": "^3.10.3"
+                "twig/twig": "^3.10.3|^4.0"
             },
             "conflict": {
                 "symfony/config": "<6.4"
@@ -6822,6 +6822,7 @@
                 "doctrine/persistence": "^2.5.2|^3.0|^4.0",
                 "phpdocumentor/reflection-docblock": "^5.6.2",
                 "phpunit/phpunit": "^11.1|^12.0",
+                "symfony/asset-mapper": "^7.4|^8.0",
                 "symfony/config": "^7.4|^8.0",
                 "symfony/dependency-injection": "^7.4|^8.0",
                 "symfony/expression-language": "^7.4|^8.0",
@@ -6866,7 +6867,7 @@
                 "twig"
             ],
             "support": {
-                "source": "https://github.com/symfony/ux-live-component/tree/v3.4.0"
+                "source": "https://github.com/symfony/ux-live-component/tree/v3.5.1"
             },
             "funding": [
                 {
@@ -6886,7 +6887,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-07-25T17:54:47+00:00"
+            "time": "2026-09-19T11:40:16+00:00"
         },
         {
             "name": "symfony/ux-twig-component",
