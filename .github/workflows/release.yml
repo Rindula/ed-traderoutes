@@ -37,7 +37,7 @@ jobs:
           sha256sum dist/ed-traderoutes-edmc-plugin.zip > dist/ed-traderoutes-edmc-plugin.zip.sha256
 
       - name: Create GitHub release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.version.outputs.version }}
           name: ED Trade Routes ${{ steps.version.outputs.version }}
