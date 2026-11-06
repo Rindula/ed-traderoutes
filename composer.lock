@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "23e77d99bd80002759e9e0defff4cfe1",
+    "content-hash": "45db90b52bb83a4fcd6706a7a3747078",
     "packages": [
         {
             "name": "composer/semver",
@@ -6260,7 +6260,8 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-07-25T17:54:47+00:00"
+            "time": "2026-07-25T17:54:47+00:00",
+            "published-time": "2026-07-31T11:52:38+00:00"
         },
         {
             "name": "symfony/stopwatch",
@@ -6857,16 +6858,16 @@
         },
         {
             "name": "symfony/ux-live-component",
-            "version": "v3.6.0",
+            "version": "v3.7.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/ux-live-component.git",
-                "reference": "088a2b95d6e7c95fd91f5b198d72f5d972fd7b50"
+                "reference": "efd54b6a1e7afff9ddc8e98b72187ec0bab98a25"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/ux-live-component/zipball/088a2b95d6e7c95fd91f5b198d72f5d972fd7b50",
-                "reference": "088a2b95d6e7c95fd91f5b198d72f5d972fd7b50",
+                "url": "https://api.github.com/repos/symfony/ux-live-component/zipball/efd54b6a1e7afff9ddc8e98b72187ec0bab98a25",
+                "reference": "efd54b6a1e7afff9ddc8e98b72187ec0bab98a25",
                 "shasum": ""
             },
             "require": {
@@ -6935,7 +6936,7 @@
                 "twig"
             ],
             "support": {
-                "source": "https://github.com/symfony/ux-live-component/tree/v3.6.0"
+                "source": "https://github.com/symfony/ux-live-component/tree/v3.7.0"
             },
             "funding": [
                 {
@@ -6955,7 +6956,8 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-10-13T08:04:44+00:00"
+            "time": "2026-11-04T08:53:23+00:00",
+            "published-time": "2026-11-04T08:54:22+00:00"
         },
         {
             "name": "symfony/ux-twig-component",
@@ -7044,7 +7046,8 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-07-28T06:36:17+00:00"
+            "time": "2026-07-28T06:36:17+00:00",
+            "published-time": "2026-07-31T11:52:46+00:00"
         },
         {
             "name": "symfony/validator",
@@ -7471,7 +7474,8 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-07-03T20:44:34+00:00"
+            "time": "2026-07-03T20:44:34+00:00",
+            "published-time": "2026-07-03T20:44:49+00:00"
         },
         {
             "name": "webmozart/assert",
