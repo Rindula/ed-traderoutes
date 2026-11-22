@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "9c3f06ad9f51ee717786c93562a46e64",
+    "content-hash": "876c02e2f1b570529384834817704a6a",
     "packages": [
         {
             "name": "composer/semver",
@@ -6879,16 +6879,16 @@
         },
         {
             "name": "symfony/ux-live-component",
-            "version": "v3.7.2",
+            "version": "v3.8.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/ux-live-component.git",
-                "reference": "0cce5abd5742b47cf5160fb815775783ea6d5429"
+                "reference": "6b7820193eddb1bd890d6d318531e08b12335ee3"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/ux-live-component/zipball/0cce5abd5742b47cf5160fb815775783ea6d5429",
-                "reference": "0cce5abd5742b47cf5160fb815775783ea6d5429",
+                "url": "https://api.github.com/repos/symfony/ux-live-component/zipball/6b7820193eddb1bd890d6d318531e08b12335ee3",
+                "reference": "6b7820193eddb1bd890d6d318531e08b12335ee3",
                 "shasum": ""
             },
             "require": {
@@ -6957,7 +6957,7 @@
                 "twig"
             ],
             "support": {
-                "source": "https://github.com/symfony/ux-live-component/tree/v3.7.2"
+                "source": "https://github.com/symfony/ux-live-component/tree/v3.8.0"
             },
             "funding": [
                 {
@@ -6977,8 +6977,8 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-11-08T07:40:03+00:00",
-            "published-time": "2026-11-08T07:40:24+00:00"
+            "time": "2026-11-22T06:49:09+00:00",
+            "published-time": "2026-11-22T06:51:17+00:00"
         },
         {
             "name": "symfony/ux-twig-component",
